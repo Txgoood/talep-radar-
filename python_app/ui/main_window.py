@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, Q
 from database import Database
 from source_catalog import CATALOG
 from imported_catalog import IMPORTED
-from scanner import SOURCES, ScanError, fetch_feed, validate_feed_url, classify_detail
+from scanner import SOURCES, ScanError, fetch_feed, validate_feed_url, classify_detail, discover_feed_url
 
 STYLE = '''
 QWidget { background:#0B1220; color:#E8EEF7; font-family:Segoe UI; font-size:13px; }
@@ -33,6 +33,15 @@ class ScanWorker(QThread):
             except Exception as exc:
                 self.source_error.emit(source, str(exc))
 
+class DiscoveryWorker(QThread):
+    found = Signal(str, str)
+    failed = Signal(str, str)
+    def __init__(self, name, url, parent=None):
+        super().__init__(parent); self.name=name; self.url=url
+    def run(self):
+        try: self.found.emit(self.name, discover_feed_url(self.url))
+        except Exception as exc: self.failed.emit(self.name, str(exc))
+
 class LeadDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent); self.setWindowTitle('Manuel talep ekle'); self.resize(520, 400)
@@ -47,7 +56,7 @@ class LeadDialog(QDialog):
 
 class MainWindow(QMainWindow):
     def __init__(self, version, build):
-        super().__init__(); self.version=version; self.build=build; self.db=Database(); self.rows=[]; self.scan_worker=None; self.scan_messages=[]; self.scan_examined=[]
+        super().__init__(); self.version=version; self.build=build; self.db=Database(); self.rows=[]; self.scan_worker=None; self.scan_messages=[]; self.scan_examined=[]; self.discovery_worker=None
         self.setWindowTitle(f'Talep Radarı · v{version} · Build {build}'); self.resize(1440,900); self.setMinimumSize(900,600); self.setStyleSheet(STYLE)
         root=QWidget(); self.setCentralWidget(root); layout=QHBoxLayout(root); layout.setContentsMargins(0,0,0,0); layout.setSpacing(0)
         side=QWidget(); side.setFixedWidth(225); side.setStyleSheet('background:#142033'); sl=QVBoxLayout(side)
@@ -96,11 +105,12 @@ class MainWindow(QMainWindow):
         self.source_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows); self.source_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         v.addWidget(self.source_table,1)
         actions=QHBoxLayout(); add=QPushButton('+ RSS Kaynağı Ekle'); add.setObjectName('primary'); add.clicked.connect(self.add_source); actions.addWidget(add)
+        self.discover_button=QPushButton('Seçilende RSS bul ve taramaya ekle'); self.discover_button.clicked.connect(self.discover_source); actions.addWidget(self.discover_button)
         open_button=QPushButton('Seçilen kaynağı aç'); open_button.clicked.connect(self.open_catalog_source); actions.addWidget(open_button)
         remove=QPushButton('Seçilen özel kaynağı kaldır'); remove.clicked.connect(self.remove_source); actions.addWidget(remove); v.addLayout(actions)
         from PySide6.QtWidgets import QCheckBox
         self.auto_scan=QCheckBox('30 dakikada bir tara (uygulama açıkken)'); self.auto_scan.toggled.connect(self.set_auto_scan); v.addWidget(self.auto_scan)
-        hint=QLabel('Yalnızca RSS olarak işaretli kaynaklar taranır. Belge adresleri araştırma listesidir; adres ve içerik doğrulanmamıştır. Hesapla giriş ve otomatik gönderim desteklenmiyor.')
+        hint=QLabel('Seçilen kaynakta RSS bul düğmesiyle uygun kaynakları taramaya ekleyin. Yalnızca RSS olarak işaretli kaynaklar taranır. Belge adresleri araştırma listesidir; adres ve içerik doğrulanmamıştır. Hesapla giriş ve otomatik gönderim desteklenmiyor.')
         hint.setWordWrap(True); v.addWidget(hint); self.refresh_sources(); return w
     def refresh_sources(self):
         self.source_rows=[{'name':name,'url':url,'builtin':True,'scan':True,'state':'RSS · test edilmedi'} for name,url in SOURCES.items()]
@@ -110,6 +120,33 @@ class MainWindow(QMainWindow):
         for i,row in enumerate(self.source_rows):
             for j,value in enumerate((row['name'],row['url'],row['state'])):
                 self.source_table.setItem(i,j,QTableWidgetItem(value))
+    def discover_source(self):
+        i=self.source_table.currentRow()
+        if not (0 <= i < len(self.source_rows)):
+            QMessageBox.information(self,'Kaynak seçin','Önce kaynak listesinden bir satır seçin.'); return
+        row=self.source_rows[i]
+        if row['scan']:
+            QMessageBox.information(self,'Zaten etkin','Bu kaynak zaten tarama listesinde.'); return
+        if self.discovery_worker and self.discovery_worker.isRunning(): return
+        self.discover_button.setEnabled(False); self.set_source_state(row['name'],'RSS aranıyor')
+        self.discovery_worker=DiscoveryWorker(row['name'],row['url'],self)
+        self.discovery_worker.found.connect(self.discovery_found); self.discovery_worker.failed.connect(self.discovery_failed)
+        self.discovery_worker.finished.connect(lambda: self.discover_button.setEnabled(True)); self.discovery_worker.start()
+    def discovery_found(self, name, url):
+        try:
+            if any(row['scan'] and row['url']==url for row in self.source_rows):
+                self.set_source_state(name,'RSS zaten taranıyor'); return
+            import hashlib
+            safe_name='RSS · ' + hashlib.sha256((name+'|'+url).encode('utf-8')).hexdigest()[:8] + ' · ' + name[:70]
+            self.db.add_source(safe_name,url); self.refresh_sources()
+            self.set_source_state(name,'RSS eklendi; Manuel Tara ile okunur')
+            QMessageBox.information(self,'Kaynak eklendi','RSS akışı bulundu ve tarama listesine eklendi. Özet ekranında Manuel Tara düğmesine basabilirsiniz.')
+        except Exception as exc:
+            self.set_source_state(name,'Eklenemedi')
+            QMessageBox.warning(self,'Eklenemedi',str(exc))
+    def discovery_failed(self, name, reason):
+        self.set_source_state(name,'RSS bulunamadı veya erişim engellendi')
+        QMessageBox.information(self,'Kaynak taranamıyor',reason)
     def open_catalog_source(self):
         i=self.source_table.currentRow()
         if not (0 <= i < len(self.source_rows)): return
@@ -147,6 +184,7 @@ class MainWindow(QMainWindow):
     def start_scan(self):
         if self.scan_worker and self.scan_worker.isRunning(): return
         self.scan_messages=[]; self.scan_examined=[]; self.scan_status.setText('Kaynaklar taranıyor…'); self.scan_button.setEnabled(False)
+        self.scan_catalog_count=sum(not row['scan'] for row in self.source_rows)
         sources={row['name']:row['url'] for row in self.source_rows if row['scan']}
         self.scan_worker=ScanWorker(sources,self); self.scan_worker.result.connect(self.scan_result); self.scan_worker.source_error.connect(self.scan_error); self.scan_worker.finished.connect(self.scan_finished); self.scan_worker.start()
     def scan_result(self, result):
@@ -180,10 +218,10 @@ class MainWindow(QMainWindow):
         if not self.scan_examined: note.setText('Henüz incelenmiş kayıt yok. Önce Manuel Tara düğmesine basın veya kaynak hatalarını kontrol edin.')
         dialog.exec()
     def scan_finished(self):
-        self.scan_status.setText('\n'.join(self.scan_messages)); self.scan_button.setEnabled(True); self.refresh()
+        self.scan_status.setText('\n'.join(self.scan_messages + [f'{self.scan_catalog_count} katalog kaynağı henüz RSS olarak eklenmediği için taranmadı.'])); self.scan_button.setEnabled(True); self.refresh()
     def closeEvent(self, event):
-        if self.scan_worker and self.scan_worker.isRunning():
-            QMessageBox.information(self, 'Tarama devam ediyor', 'Tarama tamamlandığında pencereyi kapatabilirsiniz.'); event.ignore(); return
+        if (self.scan_worker and self.scan_worker.isRunning()) or (self.discovery_worker and self.discovery_worker.isRunning()):
+            QMessageBox.information(self, 'İşlem devam ediyor', 'Kaynak işlemi tamamlandığında pencereyi kapatabilirsiniz.'); event.ignore(); return
         event.accept()
     def make_leads(self):
         w,v=self.page('Talepler','Taranan adayları ve manuel eklediğiniz talepleri inceleyin. Konum ve hizmet ihtiyacı doğrulanmalıdır.')

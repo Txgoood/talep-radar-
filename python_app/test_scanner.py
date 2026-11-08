@@ -35,6 +35,26 @@ class ScannerTest(unittest.TestCase):
         from scanner import SOURCES
         self.assertGreater(len(CATALOG), 30)
         self.assertTrue(all(name not in SOURCES for name, _, _ in CATALOG))
+    def test_site_rss_discovery_and_validation(self):
+        from scanner import discover_feed_url, ScanError
+        from io import BytesIO
+        class Response(BytesIO):
+            def geturl(self): return 'https://example.com/forum/'
+        page = b'<html><head><link rel="alternate" type="application/rss+xml" href="/feed.xml"></head></html>'
+        with patch('urllib.request.urlopen', return_value=Response(page)):
+            with patch('scanner.fetch_feed', return_value={'count': 1, 'candidates': []}) as probe:
+                self.assertEqual(discover_feed_url('https://example.com/forum/'), 'https://example.com/feed.xml')
+                probe.assert_called_once()
+        with patch('urllib.request.urlopen', return_value=Response(b'<html>no feed</html>')):
+            with self.assertRaisesRegex(ScanError, 'bulunamadı'): discover_feed_url('https://example.com/forum/')
+    def test_discovery_rejects_external_feed(self):
+        from scanner import discover_feed_url, ScanError
+        from io import BytesIO
+        class Response(BytesIO):
+            def geturl(self): return 'https://example.com/'
+        page=b'<link rel="alternate" type="application/rss+xml" href="https://other.example/rss">'
+        with patch('urllib.request.urlopen',return_value=Response(page)):
+            with self.assertRaises(ScanError): discover_feed_url('https://example.com/')
     def test_custom_sources_and_url_validation(self):
         from scanner import validate_feed_url
         with tempfile.TemporaryDirectory() as directory:

@@ -124,3 +124,48 @@ def fetch_feed(name, timeout=15, url=None):
         raise ScanError('Bağlantı başarısız veya zaman aşımına uğradı.') from exc
     total, candidates, examined = parse_feed_details(data)
     return {'source':name,'count':len(examined),'total':total,'candidates':candidates,'examined':examined}
+
+class FeedLinks(HTMLParser):
+    # Sayfanın yalnızca açıkça ilan ettiği RSS/Atom adreslerini inceler.
+    def __init__(self):
+        super().__init__(); self.links=[]
+    def handle_starttag(self, tag, attrs):
+        if tag.lower() != 'link': return
+        item=dict(attrs)
+        rel=(item.get('rel') or '').lower().split()
+        kind=(item.get('type') or '').lower().split(';')[0].strip()
+        if 'alternate' in rel and kind in ('application/rss+xml','application/atom+xml') and item.get('href'):
+            self.links.append(item['href'])
+
+def discover_feed_url(site_url):
+    from urllib.parse import urljoin
+    site_url=validate_feed_url(site_url)
+    host=(urlsplit(site_url).hostname or '').lower().removeprefix('www.')
+    request=urllib.request.Request(site_url,headers={'User-Agent':'TalepRadari/0.5 (RSS reader)','Accept':'text/html,application/rss+xml,application/atom+xml,application/xml'})
+    try:
+        with urllib.request.urlopen(request,timeout=15) as response:
+            final_url=response.geturl()
+            final_host=(urlsplit(final_url).hostname or '').lower().removeprefix('www.')
+            if final_host != host: raise ScanError('Site başka bir alana yönlendirdi; otomatik keşif durduruldu.')
+            data=response.read(MAX_BYTES+1)
+    except urllib.error.HTTPError as exc:
+        if exc.code in (401,403,429): raise ScanError(f'HTTP {exc.code}: erişim engellendi veya sınırlandı.') from exc
+        raise ScanError(f'HTTP {exc.code}: siteye ulaşılamadı.') from exc
+    except (urllib.error.URLError,TimeoutError,OSError) as exc:
+        raise ScanError('Siteye bağlanılamadı veya zaman aşımı oluştu.') from exc
+    if len(data)>MAX_BYTES: raise ScanError('Site yanıtı boyut sınırını aştı.')
+    try:
+        parse_feed_details(data)
+        return validate_feed_url(final_url)
+    except ScanError:
+        pass
+    parser=FeedLinks(); parser.feed(data.decode('utf-8',errors='replace'))
+    for href in parser.links[:3]:
+        candidate=urljoin(final_url,href)
+        try:
+            candidate=validate_feed_url(candidate)
+            if (urlsplit(candidate).hostname or '').lower().removeprefix('www.') != host: continue
+            fetch_feed('Keşif',url=candidate)
+            return candidate
+        except (ValueError,ScanError): continue
+    raise ScanError('Sitede erişilebilen açık RSS/Atom akışı bulunamadı; otomatik tarama etkinleştirilmedi.')
