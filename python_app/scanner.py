@@ -40,12 +40,21 @@ def classify_detail(title, description):
                 'dizustu', 'masaustu', 'pc', 'anakart', 'ekran karti', 'sivi sogutma')
     service = next((word for word in services if re.search(r'(?<!\w)' + re.escape(word) + r'(?!\w)', text)), None)
     if not service: return None, 'Bilgisayar veya hizmet anahtar ifadesi bulunamadı.'
+    # Ücretli hizmet sunan ilanları müşteri talebi gibi işaretleme.
+    offers = (r'hizmet\s+(?:verilir|veriyorum|vermekteyim|verebilirim|sunulur|sunuyorum)',
+              r'(?:hizmeti|hizmetleri)\s+(?:verilir|veriyorum|sunulur)',
+              r'(?:montaj|tamir|bakim|format|kurulum)\s+(?:hizmeti\s+)?(?:yapilir|yapiyorum|yapmaktayim)',
+              r'(?:verebilecegim|sundugum|verdigim)\s+hizmetler',
+              r'(?:yardimci|destek)\s+olurum', r'(?:montaj|tamir|bakim)\s+yapilir')
+    offered = next((m.group(0) for pattern in offers if (m := re.search(pattern, text))), None)
+    if offered:
+        return None, f'Hizmet sunma ilanı: {offered}. Müşteri talebi olarak değerlendirilmedi.'
     exclusions = ('satiyorum', 'satilik', 'alınır satılır', 'cozuldu', 'sorun cozuldu', 'servis aramiyorum', 'usta aramiyorum')
     exclusion = next((x for x in exclusions if normalize(x) in text), None)
     if exclusion: return None, f'Dışlama ifadesi: {exclusion}'
     strong = ('usta', 'teknisyen', 'servis ariyorum', 'tamirci', 'takacak', 'montaj yapacak',
               'yapacak birini', 'yaptirmak', 'yapabilecek', 'takabilecek', 'yardimci olacak',
-              'nerede yaptir', 'servise gotur', 'tamir ettir', 'ucret karsiligi')
+              'nerede yaptir', 'servise gotur', 'tamir ettir', 'is yaptirmak istiyorum')
     intent = next((word for word in strong if word in text), None)
     if intent:
         reason = f'Olası hizmet talebi · cihaz/iş: {service}; ifade: {intent}. Konum ve ihtiyaç doğrulanmalı.'

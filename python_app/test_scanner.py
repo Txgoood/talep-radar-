@@ -60,6 +60,15 @@ class ScannerTest(unittest.TestCase):
         self.assertIsNone(classify('SSD satıyorum', ''))
         self.assertIsNone(classify('SSD servisi aramıyorum', ''))
         self.assertIsNone(classify('Sıvı soğutma önerisi', 'Hangisini alayım?'))
+    def test_service_provider_is_not_a_customer(self):
+        from scanner import classify_detail
+        title = "Ankara'da masaüstü bilgisayar toplama ve montaj hizmeti verilir"
+        body = "Ücreti karşılığında montajında yardımcı olurum. Verebileceğim hizmetler: SSD ve RAM montajı."
+        result, reason = classify_detail(title, body)
+        self.assertIsNone(result)
+        self.assertIn('Hizmet sunma ilanı', reason)
+        self.assertIsNotNone(classify_detail('Kadıköy SSD takacak usta arıyorum', '')[0])
+        self.assertIsNotNone(classify_detail('Laptop tamir ettirmek istiyorum', 'Ücret karşılığı yardım arıyorum')[0])
     def test_atom_and_invalid(self):
         self.assertEqual(len(parse_feed(ATOM)[1]),1)
         with self.assertRaises(ScanError): parse_feed(b'<html>blocked</html>')

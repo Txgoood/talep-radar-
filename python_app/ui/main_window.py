@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, Q
 from database import Database
 from source_catalog import CATALOG
 from imported_catalog import IMPORTED
-from scanner import SOURCES, ScanError, fetch_feed, validate_feed_url
+from scanner import SOURCES, ScanError, fetch_feed, validate_feed_url, classify_detail
 
 STYLE = '''
 QWidget { background:#0B1220; color:#E8EEF7; font-family:Segoe UI; font-size:13px; }
@@ -192,35 +192,56 @@ class MainWindow(QMainWindow):
         splitter=QSplitter(); self.table=QTableWidget(0,5); self.table.setHorizontalHeaderLabels(['ID','BAŞLIK','KAYNAK','KONUM','DURUM']); self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch); self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows); self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers); self.table.itemSelectionChanged.connect(self.show_detail); splitter.addWidget(self.table)
         detail=QWidget(); d=QVBoxLayout(detail); self.detail_title=QLabel('Bir talep seçin'); self.detail_title.setWordWrap(True); d.addWidget(self.detail_title)
         self.desc=QLabel(''); self.desc.setWordWrap(True); d.addWidget(self.desc)
+        self.classification=QLabel(''); self.classification.setWordWrap(True); d.addWidget(self.classification)
+        d.addWidget(QLabel('Talep durumu'))
         self.status=QComboBox(); self.status.addItems(['Yeni','İncelenecek','Cevap bekleniyor','Kullanıcı devraldı','Randevu','İş alındı','Tamamlandı','Uygun değil','Kapandı']); d.addWidget(self.status)
-        self.note=QTextEdit(); self.note.setPlaceholderText('Görüşme notları'); d.addWidget(self.note)
+        d.addWidget(QLabel('Bu talebe ait not'))
+        self.note=QTextEdit(); self.note.setPlaceholderText('Bu taleple ilgili notunuzu yazın'); d.addWidget(self.note)
+        self.save_status=QLabel(''); self.save_status.setWordWrap(True); d.addWidget(self.save_status)
         save=QPushButton('Durumu ve notu kaydet'); save.setObjectName('primary'); save.clicked.connect(self.save_lead); d.addWidget(save)
         open_url=QPushButton('Kaynakta aç'); open_url.clicked.connect(self.open_source); d.addWidget(open_url); splitter.addWidget(detail); splitter.setSizes([800,400]); v.addWidget(splitter,1); return w
     def make_settings(self):
         w,v=self.page('Ayarlar','Uygulama bilgisi ve yerel veri')
         v.addWidget(QLabel(f'Talep Radarı  ·  Sürüm {self.version}  ·  Build {self.build}'))
         v.addWidget(QLabel(f'Veritabanı: {self.db.path}')); v.addWidget(QLabel('Telegram ve yerel model henüz uygulanmadı.')); v.addStretch(); return w
-    def refresh(self):
+    def refresh(self, selected_id=None):
+        # Tablo yenilenirken seçili talep kaybolmasın; kaydedilen not görünür kalsın.
+        if selected_id is None and hasattr(self, 'filtered'):
+            current=self.selected()
+            selected_id=current['id'] if current else None
         self.rows=self.db.leads(); self.summary.setText(f'Kayıtlı talepler  {len(self.rows)}     ·     Yeni  {sum(r["status"] == "Yeni" for r in self.rows)}')
         query=self.search.text().casefold() if hasattr(self,'search') else ''
         self.filtered=[r for r in self.rows if query in ' '.join(str(r[x]) for x in ('title','source','location','description')).casefold()]
-        self.table.setRowCount(len(self.filtered))
+        self.table.blockSignals(True); self.table.setRowCount(len(self.filtered))
+        selected_row=-1
         for i,r in enumerate(self.filtered):
             for j,key in enumerate(('id','title','source','location','status')): self.table.setItem(i,j,QTableWidgetItem(str(r[key])))
-        self.detail_title.setText('Bir talep seçin'); self.desc.clear(); self.note.clear()
+            if r['id'] == selected_id: selected_row=i
+        self.table.clearSelection()
+        if selected_row >= 0: self.table.selectRow(selected_row)
+        else: self.table.setCurrentCell(-1,-1)
+        self.table.blockSignals(False)
+        if selected_row >= 0: self.show_detail()
+        else:
+            self.detail_title.setText('Bir talep seçin'); self.desc.clear(); self.classification.clear(); self.note.clear(); self.save_status.clear()
     def selected(self):
         i=self.table.currentRow(); return self.filtered[i] if 0 <= i < len(self.filtered) else None
     def show_detail(self):
         r=self.selected()
         if r:
             self.detail_title.setText(f'Talep #{r["id"]} · {r["title"]}'); self.desc.setText(r['description'] or 'Talep metni eklenmedi.'); self.status.setCurrentText(r['status']); self.note.setPlainText(r['note'])
+            reason, explanation = classify_detail(r['title'], r['description'].split('\n\nEşleşme:',1)[0])
+            self.classification.setText('⚠ ' + explanation if 'Hizmet sunma ilanı:' in explanation else '')
+            self.save_status.setText('Not bu talebe kaydedildi.' if r['note'] else '')
     def add_lead(self):
         d=LeadDialog(self)
         if d.exec():
             self.db.add_lead(d.title.text(),d.source.text(),d.url.text(),d.location.text(),d.description.toPlainText()); self.refresh()
     def save_lead(self):
         r=self.selected()
-        if r: self.db.update_lead(r['id'],self.status.currentText(),self.note.toPlainText()); self.refresh()
+        if r:
+            self.db.update_lead(r['id'],self.status.currentText(),self.note.toPlainText()); self.refresh(r['id'])
+            self.save_status.setText('✓ Durum ve not kaydedildi. Bu talebi seçerek tekrar görebilirsiniz.')
     def open_source(self):
         r=self.selected()
         if not r: return
