@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="tr"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@100..900&display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"on-secondary-fixed":"#2c0051","on-secondary-fixed-variant":"#6900b3","primary-container":"#60a5fa","primary-fixed-dim":"#a4c9ff","on-surface":"#dce2f6","inverse-on-surface":"#2a3040","on-surface-variant":"#c1c7d3","on-error-container":"#ffdad6","outline-variant":"#414751","on-background":"#dce2f6","on-primary-fixed":"#001c39","surface-bright":"#323949","secondary-fixed-dim":"#ddb7ff","surface-container-high":"#232a39","surface":"#0c1321","on-tertiary-fixed-variant":"#005321","on-primary-fixed-variant":"#004883","surface-variant":"#2e3544","on-secondary":"#490080","secondary":"#ddb7ff","surface-tint":"#a4c9ff","on-secondary-container":"#d6a9ff","error-container":"#93000a","tertiary-fixed":"#6bff8f","tertiary-container":"#06bb56","tertiary":"#4ae176","on-primary-container":"#003a6b","on-tertiary-container":"#00431a","background":"#0c1321","surface-container":"#19202e","error":"#ffb4ab","primary-fixed":"#d4e3ff","tertiary-fixed-dim":"#4ae176","on-error":"#690005","on-primary":"#00315d","inverse-primary":"#0060ac","outline":"#8b919d","surface-container-highest":"#2e3544","on-tertiary":"#003915","secondary-container":"#6f00be","primary":"#a4c9ff","surface-container-low":"#151b2a","surface-dim":"#0c1321","inverse-surface":"#dce2f6","secondary-fixed":"#f0dbff","on-tertiary-fixed":"#002109","surface-container-lowest":"#070e1c"},borderRadius:{"DEFAULT":"0.125rem","lg":"0.25rem","xl":"0.5rem","full":"0.75rem"},spacing:{"space-xs":"0.25rem","space-lg":"0.75rem","space-md":"0.5rem","space-xl":"1rem","gutter":"0.5rem","space-sm":"0.375rem","margin":"0.5rem"},fontFamily:{"code-compact":["Cascadia Code"],"body-strong":["Segoe UI"],"code-default":["Cascadia Code"],"code-strong":["Cascadia Code"],"label-dense":["Segoe UI"],"headline-lg":["Segoe UI"],"headline-sm":["Segoe UI"],"headline-md":["Segoe UI"],"caption":["Segoe UI"],"body-default":["Segoe UI"]},fontSize:{"code-compact":["10px",{"lineHeight":"14px","fontWeight":"400"}],"body-strong":["12px",{"lineHeight":"16px","fontWeight":"600"}],"code-default":["11px",{"lineHeight":"15px","fontWeight":"400"}],"code-strong":["11px",{"lineHeight":"15px","fontWeight":"600"}],"label-dense":["10px",{"lineHeight":"12px","fontWeight":"700"}],"headline-lg":["20px",{"lineHeight":"26px","fontWeight":"600"}],"headline-sm":["14px",{"lineHeight":"18px","fontWeight":"600"}],"headline-md":["16px",{"lineHeight":"22px","fontWeight":"600"}],"caption":["11px",{"lineHeight":"14px","fontWeight":"400"}],"body-default":["12px",{"lineHeight":"16px","fontWeight":"400"}]}}}};</script></head><body class="bg-background font-body-default text-body-default text-on-surface antialiased select-none"><header class="fixed top-0 left-0 right-0 h-8 bg-surface-container-lowest z-50 flex items-center justify-between border-b border-surface-container-high px-space-md"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-primary text-[14px]">radar</span><span class="font-code-strong text-code-strong text-on-surface tracking-tight">Talep Radarı · v1.0.0-rc1 (Windows 11 x64)</span></div><div class="flex items-center gap-space-lg"><div class="flex items-center gap-space-xs text-on-surface-variant font-code-compact text-code-compact"><span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span><span>TELEMETRİ HAZIR</span></div><div class="flex items-center -mr-space-md"><button aria-label="Küçült" class="w-9 h-8 inline-flex items-center justify-center hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-[13px]">minimize</span></button><button aria-label="Ekranı Kapla" class="w-9 h-8 inline-flex items-center justify-center hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-[13px]">check_box_outline_blank</span></button><button aria-label="Kapat" class="w-10 h-8 inline-flex items-center justify-center hover:bg-error-container text-on-surface-variant hover:text-on-error-container transition-colors" type="button"><span class="material-symbols-outlined text-[13px]">close</span></button></div></div></header><aside class="fixed left-0 top-8 bottom-7 w-56 bg-surface-container-low z-40 flex flex-col border-r border-surface-container-high"><div class="p-space-md border-b border-surface-container-high flex flex-col gap-space-xs"><div class="flex items-center justify-between"><div class="flex items-center gap-space-xs"><div class="w-2 h-2 rounded-full bg-tertiary shadow-[0_0_8px_rgba(74,225,118,0.5)] animate-ping"></div><span class="font-headline-sm text-headline-sm text-primary uppercase tracking-wider">TALEP RADARI</span></div><span class="px-space-xs py-0.5 bg-surface-container-high border border-outline-variant rounded font-code-compact text-code-compact text-tertiary-fixed-dim">WAL</span></div><div class="text-on-surface-variant font-caption text-caption flex items-center gap-space-xs"><span class="material-symbols-outlined text-[12px]">storage</span><span>Masaüstü · Yerel SQLite WAL</span></div></div><div class="p-space-sm"><button class="w-full flex items-center justify-center gap-space-sm px-space-md py-space-xs bg-error-container/20 border border-error hover:bg-error-container hover:text-on-error-container text-error rounded font-label-dense text-label-dense uppercase tracking-wider transition-colors shadow-sm" type="button"><span class="material-symbols-outlined text-[14px]">power_settings_new</span><span>Tüm Gönderimleri Durdur</span></button></div><nav class="flex-1 px-space-xs py-space-xs overflow-y-auto flex flex-col gap-0.5" data-active-classes="bg-primary-container text-on-primary-container font-body-strong"><a class="group flex items-center justify-between px-space-sm py-1 rounded text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="ozet" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[15px]">dashboard</span><span class="font-body-default text-body-default">Özet</span></div><span class="px-1.5 py-0.2 bg-surface-container-high group-hover:bg-surface-container-highest text-on-surface font-code-compact text-code-compact rounded">3</span></a><a class="group flex items-center justify-between px-space-sm py-1 rounded text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="talepler" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[15px]">stream</span><span class="font-body-default text-body-default">Talepler</span></div><span class="px-1.5 py-0.2 bg-tertiary-container/30 text-tertiary font-code-compact text-code-compact border border-tertiary/40 rounded font-semibold">12 Yeni</span></a><a class="group flex items-center justify-between px-space-sm py-1 rounded text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="gorusmeler" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[15px]">forum</span><span class="font-body-default text-body-default">Görüşmeler</span></div><span class="px-1.5 py-0.2 bg-surface-container-high group-hover:bg-surface-container-highest text-on-surface font-code-compact text-code-compact rounded">2 Bekleyen</span></a><a aria-current="page" class="group flex items-center justify-between px-space-sm py-1 rounded transition-colors bg-primary-container text-on-primary-container font-body-strong" data-path="onay-bekleyenler" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[15px]">outbox</span><span class="font-body-default text-body-default">Onay Bekleyenler</span></div><span class="px-1.5 py-0.2 bg-primary/20 text-primary-fixed-dim font-code-compact text-code-compact border border-primary/30 rounded">4</span></a><a class="group flex items-center justify-between px-space-sm py-1 rounded text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="kaynaklar" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[15px]">hub</span><span class="font-body-default text-body-default">Kaynaklar</span></div><span class="px-1.5 py-0.2 bg-error/20 text-error font-code-compact text-code-compact border border-error/40 rounded">1 Uyarı</span></a><a class="group flex items-center justify-between px-space-sm py-1 rounded text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="raporlar" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[15px]">assessment</span><span class="font-body-default text-body-default">Raporlar</span></div><span class="font-code-compact text-code-compact text-outline">20:30</span></a><a class="group flex items-center justify-between px-space-sm py-1 rounded text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="ayarlar" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[15px]">settings</span><span class="font-body-default text-body-default">Ayarlar</span></div></a></nav><div class="p-space-sm border-t border-surface-container-high flex items-center justify-between bg-surface-container-lowest"><div class="flex items-center gap-space-sm"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="flex flex-col"><span class="font-body-strong text-body-strong text-on-surface">Operator-01</span><span class="font-code-compact text-code-compact text-on-surface-variant">Sistem Yetkilisi</span></div></div><span class="material-symbols-outlined text-outline text-[16px]">lock</span></div></aside><div class="pl-56"><main class="relative pt-8 pb-7 min-h-screen bg-surface px-space-md py-space-sm"><div class="flex flex-col w-full">
+<!-- Windows Sun Valley Control Toolbar & Safety Bar -->
+<div class="flex flex-col gap-space-xs bg-surface-container-lowest p-space-sm rounded-lg mb-space-sm shadow-md">
+<div class="flex items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-sm min-w-0">
+<span class="material-symbols-outlined text-primary text-[18px]">outbox</span>
+<div class="flex items-baseline gap-space-sm truncate">
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold">Onay Bekleyen İlk Cevap Taslakları ve Gönderim Kuyruğu</span>
+<span class="font-code-compact text-code-compact text-on-surface-variant">Slot: Q-OUTBOX-01 · 4 Görev Listelendi</span>
+</div>
+</div>
+<!-- Global Emergency & Queue Controls -->
+<div class="flex items-center gap-space-xs shrink-0">
+<button class="h-6.5 px-space-md bg-surface-container hover:bg-surface-bright text-on-surface rounded text-caption font-caption flex items-center gap-space-xs transition-colors shadow-sm" id="btn-pause-all" type="button">
+<span class="material-symbols-outlined text-[13px] text-on-surface-variant">pause_circle</span>
+<span>Tümünü Beklemeye Al</span>
+</button>
+<button class="h-6.5 px-space-md bg-surface-container hover:bg-surface-bright text-on-surface rounded text-caption font-caption flex items-center gap-space-xs transition-colors shadow-sm" id="btn-refresh" type="button">
+<span class="material-symbols-outlined text-[13px] text-primary">sync</span>
+<span>Kuyruğu Yenile</span>
+</button>
+<div class="w-px h-4 bg-surface-container-highest mx-space-xs"></div>
+<button class="h-6.5 px-space-md bg-surface-container-high hover:bg-error-container hover:text-on-error-container text-error rounded text-label-dense font-label-dense uppercase tracking-wider flex items-center gap-space-xs transition-colors" id="btn-killswitch" type="button">
+<span class="material-symbols-outlined text-[14px]">lock_open</span>
+<span>Acil Gönderim Kilidi: PASİF</span>
+</button>
+</div>
+</div>
+<!-- Safety Banner with Micro Indicator -->
+<div class="flex items-center justify-between px-space-sm py-1 bg-surface-container-low rounded text-caption font-caption">
+<div class="flex items-center gap-space-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px] text-tertiary">verified_user</span>
+<span class="text-on-surface font-body-strong">Güvenlik Denetimi:</span>
+<span>Tüm gönderimler kullanıcı denetiminde. Toplu kontrolsüz gönderim varsayılan olarak kapalıdır.</span>
+</div>
+<div class="flex items-center gap-space-md font-code-compact text-code-compact text-on-surface-variant">
+<span class="flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+          Politika Koruması: Seviye 3 (Katı)
+        </span>
+<span class="text-outline">Anti-Spam Tokenler: Etkin</span>
+</div>
+</div>
+</div>
+<!-- Main Split Layout (Qt QSplitter simulation) -->
+<div class="grid grid-cols-12 gap-space-sm w-full">
+<!-- Left: Queue Monitor Table (Col 7) -->
+<div class="col-span-7 flex flex-col bg-surface-container-low rounded-lg shadow-sm overflow-hidden">
+<!-- Table Filter and Quick Stats Header -->
+<div class="flex items-center justify-between px-space-sm py-space-xs bg-surface-container-high">
+<div class="flex items-center gap-space-sm">
+<span class="font-headline-sm text-[12px] text-on-surface font-semibold uppercase tracking-wider">Kuyruktaki Öğeler</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-highest text-primary font-code-compact text-code-compact font-bold">4 Aktif</span>
+<span class="px-1.5 py-0.5 rounded bg-tertiary/20 text-tertiary font-code-compact text-code-compact">2 Onay Bekliyor</span>
+</div>
+<div class="flex items-center gap-space-xs font-code-compact text-code-compact text-on-surface-variant">
+<span class="material-symbols-outlined text-[13px]">speed</span>
+<span>Oran: 1 işlem / 45s</span>
+</div>
+</div>
+<!-- Data Table -->
+<div class="overflow-x-auto w-full">
+<table class="w-full text-left border-collapse select-none">
+<thead>
+<tr class="bg-surface-container-lowest text-on-surface-variant font-caption text-caption uppercase tracking-wider h-6.5">
+<th class="px-space-sm py-1 font-semibold">Kuyruk ID</th>
+<th class="px-space-xs py-1 font-semibold">Kaynak</th>
+<th class="px-space-xs py-1 font-semibold">Hedef</th>
+<th class="px-space-xs py-1 font-semibold">Hizmet & Konum</th>
+<th class="px-space-xs py-1 font-semibold">Motor</th>
+<th class="px-space-xs py-1 font-semibold">Durum</th>
+<th class="px-space-sm py-1 font-semibold text-right">Eylemler</th>
+</tr>
+</thead>
+<tbody class="font-code-default text-code-default divide-y-0" id="queue-tbody">
+<!-- Row 1: Selected -->
+<tr class="bg-primary/15 text-on-surface cursor-pointer transition-colors shadow-[inset_2px_0_0_0] shadow-primary" data-queue-id="OUT-108">
+<td class="px-space-sm py-1 font-code-strong text-primary">#OUT-108 <span class="text-on-surface-variant text-[9px] font-normal">#108</span></td>
+<td class="px-space-xs py-1 text-on-surface truncate max-w-[90px]">Donanım Arşivi</td>
+<td class="px-space-xs py-1 font-body-strong text-primary">@berk_pc</td>
+<td class="px-space-xs py-1 font-body-default text-[11px] truncate max-w-[120px]">Sıvı Soğutma (Kadıköy)</td>
+<td class="px-space-xs py-1 text-[10px] text-on-surface-variant">Qwen 3B</td>
+<td class="px-space-xs py-1">
+<span class="inline-flex items-center gap-1 px-1 py-0.5 rounded bg-primary/20 text-primary-fixed-dim text-label-dense font-label-dense uppercase tracking-wider">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                  Onay Bekliyor
+                </span>
+</td>
+<td class="px-space-sm py-1 text-right">
+<div class="inline-flex items-center gap-1">
+<button class="h-5 px-1.5 bg-tertiary-container text-on-tertiary-container hover:bg-tertiary rounded text-[10px] font-bold flex items-center gap-0.5 shadow-sm" title="Hemen Gönder" type="button">
+<span class="material-symbols-outlined text-[11px]">send</span>Gönder
+                  </button>
+<button class="h-5 px-1 bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded text-[10px]" title="Taslağı Düzenle" type="button">
+<span class="material-symbols-outlined text-[11px]">edit</span>
+</button>
+<button class="h-5 px-1 bg-error-container/40 hover:bg-error-container text-error rounded text-[10px]" title="Reddet ve Geç" type="button">
+<span class="material-symbols-outlined text-[11px]">close</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container bg-surface-container-low text-on-surface cursor-pointer transition-colors" data-queue-id="OUT-109">
+<td class="px-space-sm py-1 font-code-strong text-on-surface">#OUT-109 <span class="text-on-surface-variant text-[9px] font-normal">#109</span></td>
+<td class="px-space-xs py-1 text-on-surface truncate max-w-[90px]">Techolay</td>
+<td class="px-space-xs py-1 font-body-strong text-on-surface">@caner_99</td>
+<td class="px-space-xs py-1 font-body-default text-[11px] truncate max-w-[120px]">Termal Macun (Üsküdar)</td>
+<td class="px-space-xs py-1 text-[10px] text-on-surface-variant">Şablon</td>
+<td class="px-space-xs py-1">
+<span class="inline-flex items-center gap-1 px-1 py-0.5 rounded bg-primary/20 text-primary-fixed-dim text-label-dense font-label-dense uppercase tracking-wider">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                  Onay Bekliyor
+                </span>
+</td>
+<td class="px-space-sm py-1 text-right">
+<div class="inline-flex items-center gap-1">
+<button class="h-5 px-1.5 bg-surface-container-high hover:bg-tertiary-container hover:text-on-tertiary-container text-on-surface rounded text-[10px] font-semibold flex items-center gap-0.5" title="Gönder" type="button">
+<span class="material-symbols-outlined text-[11px]">send</span>Gönder
+                  </button>
+<button class="h-5 px-1 bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded text-[10px]" title="Düzenle" type="button">
+<span class="material-symbols-outlined text-[11px]">edit</span>
+</button>
+<button class="h-5 px-1 bg-surface-container-high hover:bg-error-container hover:text-error text-on-surface-variant rounded text-[10px]" title="Reddet" type="button">
+<span class="material-symbols-outlined text-[11px]">close</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container bg-surface-container-lowest text-on-surface-variant cursor-pointer transition-colors" data-queue-id="OUT-110">
+<td class="px-space-sm py-1 font-code-strong text-on-surface-variant">#OUT-110 <span class="text-on-surface-variant text-[9px] font-normal">#110</span></td>
+<td class="px-space-xs py-1 text-on-surface-variant truncate max-w-[90px]">Technopat</td>
+<td class="px-space-xs py-1 font-body-strong text-on-surface-variant">@ahmet_k</td>
+<td class="px-space-xs py-1 font-body-default text-[11px] truncate max-w-[120px]">Format Kurulum (Beşiktaş)</td>
+<td class="px-space-xs py-1 text-[10px] text-on-surface-variant">Yerel</td>
+<td class="px-space-xs py-1">
+<span class="inline-flex items-center gap-1 px-1 py-0.5 rounded bg-surface-container-highest text-outline text-label-dense font-label-dense uppercase tracking-wider">
+<span class="material-symbols-outlined text-[10px] text-outline">lock</span>
+                  Salt Okunur
+                </span>
+</td>
+<td class="px-space-sm py-1 text-right">
+<div class="inline-flex items-center gap-1">
+<button class="h-5 px-1.5 bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded text-[10px] flex items-center gap-0.5" title="Kaynakta Aç" type="button">
+<span class="material-symbols-outlined text-[11px]">open_in_new</span>Aç
+                  </button>
+<button class="h-5 px-1 bg-surface-container-high hover:bg-surface-container-highest text-on-surface-variant rounded text-[10px]" title="Kapat" type="button">
+<span class="material-symbols-outlined text-[11px]">visibility_off</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container bg-surface-container-low text-on-surface cursor-pointer transition-colors" data-queue-id="OUT-111">
+<td class="px-space-sm py-1 font-code-strong text-on-surface">#OUT-111 <span class="text-on-surface-variant text-[9px] font-normal">#111</span></td>
+<td class="px-space-xs py-1 text-on-surface truncate max-w-[90px]">DonanımHaber</td>
+<td class="px-space-xs py-1 font-body-strong text-on-surface">@murat_v</td>
+<td class="px-space-xs py-1 font-body-default text-[11px] truncate max-w-[120px]">SSD Takma (Maltepe)</td>
+<td class="px-space-xs py-1 text-[10px] text-on-surface-variant">Şablon</td>
+<td class="px-space-xs py-1">
+<span class="inline-flex items-center gap-1 px-1 py-0.5 rounded bg-error-container/30 text-error text-label-dense font-label-dense uppercase tracking-wider">
+<span class="material-symbols-outlined text-[10px]">hourglass_top</span>
+                  429 Hız Sınırı
+                </span>
+</td>
+<td class="px-space-sm py-1 text-right">
+<div class="inline-flex items-center gap-1">
+<button class="h-5 px-1.5 bg-surface-container-high hover:bg-surface-bright text-on-surface rounded text-[10px] flex items-center gap-0.5" type="button">
+<span class="material-symbols-outlined text-[11px]">schedule</span>Beklet
+                  </button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Real-time Queue Status Line -->
+<div class="mt-auto px-space-sm py-1 bg-surface-container-lowest flex items-center justify-between font-code-compact text-code-compact text-on-surface-variant">
+<div class="flex items-center gap-space-md">
+<span>Seçili: <strong class="text-primary">1</strong> / Toplam: 4</span>
+<span>Bekleme Süresi Ortalaması: <strong class="text-on-surface">2.4 dk</strong></span>
+</div>
+<div class="flex items-center gap-space-xs text-tertiary">
+<span class="material-symbols-outlined text-[12px]">security</span>
+<span>Worker: Thread-02 Dinlemede</span>
+</div>
+</div>
+</div>
+<!-- Right: Inspection & Interactive Draft Workspace (Col 5) -->
+<div class="col-span-5 flex flex-col bg-surface-container-low rounded-lg shadow-sm overflow-hidden">
+<!-- Inspector Header -->
+<div class="flex items-center justify-between px-space-sm py-space-xs bg-surface-container-high">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[16px]">pageview</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Outbox #OUT-108 · Talep #108</span>
+</div>
+<div class="flex items-center gap-space-xs">
+<span class="px-1.5 py-0.5 rounded bg-primary/20 text-primary-fixed-dim font-code-compact text-code-compact">Qwen-2.5-3B (Yerel)</span>
+<a class="h-5 px-1.5 bg-surface-container hover:bg-surface-bright text-primary rounded font-caption text-caption flex items-center gap-0.5 transition-colors" href="#" target="_blank">
+<span>Kaynakta Aç</span>
+<span class="material-symbols-outlined text-[11px]">open_in_new</span>
+</a>
+</div>
+</div>
+<div class="p-space-sm flex flex-col gap-space-sm overflow-y-auto">
+<!-- 1. Source Message Card -->
+<div class="bg-surface-container-lowest p-space-sm rounded shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between font-caption text-caption text-on-surface-variant">
+<span class="font-semibold text-on-surface flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px] text-primary">chat</span>
+              Orijinal Kaynak Mesajı
+            </span>
+<span class="font-code-compact text-code-compact">Bugün, 19:14 · Donanım Arşivi</span>
+</div>
+<p class="font-body-default text-body-default text-on-surface bg-surface-container-high/60 p-space-xs rounded select-text italic">
+            "Kadıköy Moda'dayım. Arctic Liquid Freezer II 240mm sıvı soğutucu aldım, kasaya montajını yapıp termal macunu yenileyebilecek var mı?"
+          </p>
+</div>
+<!-- 2. Match Rationale & Attributes Pill Box -->
+<div class="bg-surface-container p-space-xs rounded flex flex-col gap-1 text-caption font-caption">
+<div class="flex items-center justify-between text-on-surface-variant px-1">
+<span class="font-body-strong text-body-strong text-on-surface">Eşleşme Gerekçesi & Kriterler</span>
+<span class="font-code-compact text-code-compact text-tertiary">Skor: 94/100</span>
+</div>
+<div class="flex flex-wrap gap-1 px-1">
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface font-code-compact text-[10px]">
+<span class="material-symbols-outlined text-[11px] text-tertiary">check_circle</span>
+              Kadıköy (Öncelikli ilçe)
+            </span>
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface font-code-compact text-[10px]">
+<span class="material-symbols-outlined text-[11px] text-tertiary">check_circle</span>
+              Sıvı Soğutma & Termal Macun
+            </span>
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface font-code-compact text-[10px]">
+<span class="material-symbols-outlined text-[11px] text-tertiary">check_circle</span>
+              Müsaitlik: Mesai Sonrası
+            </span>
+</div>
+</div>
+<!-- 3. Generated Answer Text (Editable Area) -->
+<div class="flex flex-col gap-1">
+<div class="flex items-center justify-between font-caption text-caption">
+<label class="font-body-strong text-body-strong text-on-surface flex items-center gap-1" for="response-textarea">
+<span class="material-symbols-outlined text-[14px] text-primary">edit_note</span>
+              Önerilen Cevap Metni
+            </label>
+<span class="text-on-surface-variant font-code-compact text-code-compact">211 Karakter · 32 Kelime</span>
+</div>
+<textarea class="w-full bg-surface-container-lowest text-on-surface font-body-default text-body-default p-space-sm rounded outline-none focus:ring-1 focus:ring-primary select-text transition-all resize-none shadow-inner leading-relaxed" id="response-textarea" rows="4">Merhaba, Kadıköy Moda bölgesinde sıvı soğutucu montajı ve kaliteli termal macun (MX-4) yenilemesi için akşam saatlerinde yardımcı olabilirim. Kasanızın modelini iletebilirseniz radyatör uyumunu önceden teyit edebiliriz.</textarea>
+</div>
+<!-- 4. Validation & Guardrail Checklist -->
+<div class="bg-surface-container-lowest p-space-xs rounded flex flex-col gap-1">
+<span class="font-label-dense text-label-dense text-on-surface-variant uppercase tracking-wider px-1">Otomatik Güvenlik & Uyumluluk Kontrolleri</span>
+<div class="flex flex-col gap-0.5 text-caption font-caption">
+<div class="flex items-center justify-between px-space-xs py-0.5 rounded hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-space-xs text-on-surface">
+<span class="material-symbols-outlined text-[13px] text-tertiary">check</span>
+<span>Fiyat kuralı ihlali yok (Otomatik teklif verilmedi)</span>
+</div>
+<span class="font-code-compact text-code-compact text-tertiary">PASSED</span>
+</div>
+<div class="flex items-center justify-between px-space-xs py-0.5 rounded hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-space-xs text-on-surface">
+<span class="material-symbols-outlined text-[13px] text-tertiary">check</span>
+<span>İletişim bilgisi sızdırma yok (Telefon/IBAN içermiyor)</span>
+</div>
+<span class="font-code-compact text-code-compact text-tertiary">PASSED</span>
+</div>
+<div class="flex items-center justify-between px-space-xs py-0.5 rounded hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-space-xs text-on-surface">
+<span class="material-symbols-outlined text-[13px] text-primary">key</span>
+<span>Idempotency Token oluşturuldu:</span>
+</div>
+<span class="font-code-compact text-[10px] text-primary font-mono select-all">idem_out_108_78c2e</span>
+</div>
+</div>
+</div>
+<!-- 5. Operational Action Command Stack -->
+<div class="flex flex-col gap-space-xs pt-space-xs">
+<!-- Primary Dispatch Button (Ctrl+Enter) -->
+<button class="w-full h-8 bg-tertiary-container hover:bg-tertiary text-on-tertiary-container rounded font-body-strong text-body-strong flex items-center justify-between px-space-md shadow-sm transition-all" id="btn-dispatch" type="button">
+<div class="flex items-center gap-space-xs font-semibold">
+<span class="material-symbols-outlined text-[16px]">send_and_archive</span>
+<span>Doğrula ve Şimdi Gönder</span>
+</div>
+<span class="px-1.5 py-0.5 bg-black/20 text-on-tertiary-container font-code-compact text-code-compact rounded">Ctrl + Enter</span>
+</button>
+<!-- Secondary Operational Actions -->
+<div class="grid grid-cols-2 gap-space-xs">
+<button class="h-6.5 bg-surface-container hover:bg-surface-bright text-on-surface rounded font-caption text-caption flex items-center justify-between px-space-sm transition-colors shadow-sm" id="btn-edit-mode" type="button">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-primary">tune</span>
+<span>Metni Düzenle</span>
+</div>
+<span class="font-code-compact text-[9px] text-on-surface-variant">F2</span>
+</button>
+<button class="h-6.5 bg-surface-container hover:bg-surface-bright text-on-surface rounded font-caption text-caption flex items-center justify-between px-space-sm transition-colors shadow-sm" id="btn-skip" type="button">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-outline">fast_forward</span>
+<span>Pas Geç</span>
+</div>
+<span class="font-code-compact text-[9px] text-on-surface-variant">Del</span>
+</button>
+</div>
+<div class="flex items-center gap-space-xs">
+<button class="flex-1 h-6 bg-surface-container-high hover:bg-error-container hover:text-on-error-container text-on-surface-variant rounded font-caption text-[11px] flex items-center justify-center gap-1 transition-colors" id="btn-dismiss-irrelevant" type="button">
+<span class="material-symbols-outlined text-[12px]">block</span>
+<span>Uygun Değil Olarak İşaretle</span>
+</button>
+<button class="h-6 px-space-sm bg-surface-container-high hover:bg-surface-bright text-primary rounded font-caption text-[11px] flex items-center gap-1 transition-colors" id="btn-open-source" type="button">
+<span class="material-symbols-outlined text-[12px]">open_in_new</span>
+<span>Kaynakta Konuyu Aç</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+  (function initQueueOperations() {
+    const textarea = document.getElementById('response-textarea');
+    const dispatchBtn = document.getElementById('btn-dispatch');
+    const editBtn = document.getElementById('btn-edit-mode');
+    const skipBtn = document.getElementById('btn-skip');
+    const killSwitch = document.getElementById('btn-killswitch');
+    const tableRows = document.querySelectorAll('#queue-tbody tr');
+
+    // Row selection micro-interaction
+    tableRows.forEach(row => {
+      row.addEventListener('click', () => {
+        tableRows.forEach(r => {
+          r.classList.remove('bg-primary/15', 'shadow-[inset_2px_0_0_0]', 'shadow-primary');
+          const idCell = r.querySelector('td:first-child');
+          if (idCell) idCell.classList.remove('text-primary');
+        });
+        row.classList.add('bg-primary/15', 'shadow-[inset_2px_0_0_0]', 'shadow-primary');
+        const activeIdCell = row.querySelector('td:first-child');
+        if (activeIdCell) activeIdCell.classList.add('text-primary');
+      });
+    });
+
+    // Keyboard Shortcuts: Ctrl+Enter (Send), F2 (Focus Edit), Delete (Skip)
+    window.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.key === 'Enter') {
+        e.preventDefault();
+        triggerDispatch();
+      } else if (e.key === 'F2') {
+        e.preventDefault();
+        textarea.focus();
+        textarea.select();
+      } else if (e.key === 'Delete' && document.activeElement !== textarea) {
+        e.preventDefault();
+        triggerSkip();
+      }
+    });
+
+    function triggerDispatch() {
+      dispatchBtn.classList.add('scale-[0.98]', 'opacity-80');
+      const originalText = dispatchBtn.innerHTML;
+      dispatchBtn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">sync</span><span>Kuyruktan Gönderiliyor...</span>';
+      setTimeout(() => {
+        dispatchBtn.innerHTML = '<span class="material-symbols-outlined text-[16px]">task_alt</span><span>Başarıyla Gönderildi</span>';
+        setTimeout(() => {
+          dispatchBtn.innerHTML = originalText;
+          dispatchBtn.classList.remove('scale-[0.98]', 'opacity-80');
+        }, 1200);
+      }, 500);
+    }
+
+    function triggerSkip() {
+      const selected = document.querySelector('tr[data-queue-id="OUT-108"]');
+      if (selected) {
+        selected.style.opacity = '0.35';
+      }
+    }
+
+    dispatchBtn?.addEventListener('click', triggerDispatch);
+    editBtn?.addEventListener('click', () => textarea.focus());
+    skipBtn?.addEventListener('click', triggerSkip);
+
+    // Emergency Kill Switch Toggle State
+    let isKillActive = false;
+    killSwitch?.addEventListener('click', () => {
+      isKillActive = !isKillActive;
+      if (isKillActive) {
+        killSwitch.className = "h-6.5 px-space-md bg-error text-surface-container-lowest rounded text-label-dense font-label-dense uppercase tracking-wider flex items-center gap-space-xs transition-colors shadow-md";
+        killSwitch.innerHTML = '<span class="material-symbols-outlined text-[14px]">lock</span><span>Acil Gönderim Kilidi: AKTİF</span>';
+        dispatchBtn.setAttribute('disabled', 'true');
+        dispatchBtn.classList.add('opacity-40', 'pointer-events-none');
+      } else {
+        killSwitch.className = "h-6.5 px-space-md bg-surface-container-high hover:bg-error-container hover:text-on-error-container text-error rounded text-label-dense font-label-dense uppercase tracking-wider flex items-center gap-space-xs transition-colors";
+        killSwitch.innerHTML = '<span class="material-symbols-outlined text-[14px]">lock_open</span><span>Acil Gönderim Kilidi: PASİF</span>';
+        dispatchBtn.removeAttribute('disabled');
+        dispatchBtn.classList.remove('opacity-40', 'pointer-events-none');
+      }
+    });
+  })();
+</script></main></div><footer class="fixed bottom-0 left-0 right-0 h-7 bg-surface-container-lowest z-50 flex items-center justify-between px-space-sm border-t border-surface-container-high font-code-compact text-code-compact text-on-surface-variant"><div class="flex items-center divide-x divide-outline-variant"><div class="flex items-center gap-space-xs pr-space-md"><span class="w-2 h-2 rounded-full bg-tertiary"></span><span class="text-on-surface font-semibold">Motor:</span><span>Çalışıyor (Son tarama: 19:42)</span></div><div class="flex items-center gap-space-xs px-space-md"><span class="w-2 h-2 rounded-full bg-tertiary"></span><span class="text-on-surface font-semibold">Telegram Köprüsü:</span><span>Bağlı (@talep_radari_bot)</span></div><div class="flex items-center gap-space-xs px-space-md"><span class="w-2 h-2 rounded-full bg-primary"></span><span class="text-on-surface font-semibold">Yerel Model:</span><span>Qwen-2.5-3B (CPU · Boşta 280MB)</span></div></div><div class="flex items-center divide-x divide-outline-variant"><div class="flex items-center gap-space-xs px-space-md"><span>SQLite WAL:</span><span class="text-on-surface font-semibold">4.2 MB</span></div><div class="flex items-center gap-space-xs pl-space-md"><span class="material-symbols-outlined text-[12px] text-tertiary">verified_user</span><span>Çift Örnek Kilidi:</span><span class="text-tertiary font-semibold">Aktif</span></div></div></footer></body></html>
