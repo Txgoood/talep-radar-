@@ -12,6 +12,7 @@ SOURCES = {
     'Technopat Sosyal': 'https://www.technopat.net/sosyal/bolum/-/index.rss',
     'Techolay Teknik Destek': 'https://techolay.net/sosyal/bolum/teknik-destek.10/index.rss',
     'Technopat Teknik Destek': 'https://www.technopat.net/sosyal/bolum/teknik-destek.230/index.rss',
+    'Technopat Hizmet İlanları': 'https://www.technopat.net/sosyal/bolum/hizmet-ilanlari.148/index.rss',
 }
 MAX_BYTES = 2_000_000
 
@@ -33,29 +34,35 @@ def normalize(value):
     text = value.translate(str.maketrans({'İ':'i','I':'ı'})).lower()
     return text.translate(str.maketrans({'ı':'i','ş':'s','ğ':'g','ü':'u','ö':'o','ç':'c'}))
 
-def classify(title, description):
+def classify_detail(title, description):
     text = normalize(title + ' ' + description)
     services = ('ssd', 'ram', 'termal macun', 'format', 'bilgisayar', 'laptop',
                 'dizustu', 'masaustu', 'pc', 'anakart', 'ekran karti', 'sivi sogutma')
     service = next((word for word in services if re.search(r'(?<!\w)' + re.escape(word) + r'(?!\w)', text)), None)
-    if not service: return None
+    if not service: return None, 'Bilgisayar veya hizmet anahtar ifadesi bulunamadı.'
     exclusions = ('satiyorum', 'satilik', 'alınır satılır', 'cozuldu', 'sorun cozuldu', 'servis aramiyorum', 'usta aramiyorum')
-    if any(normalize(x) in text for x in exclusions): return None
+    exclusion = next((x for x in exclusions if normalize(x) in text), None)
+    if exclusion: return None, f'Dışlama ifadesi: {exclusion}'
     strong = ('usta', 'teknisyen', 'servis ariyorum', 'tamirci', 'takacak', 'montaj yapacak',
               'yapacak birini', 'yaptirmak', 'yapabilecek', 'takabilecek', 'yardimci olacak',
               'nerede yaptir', 'servise gotur', 'tamir ettir', 'ucret karsiligi')
     intent = next((word for word in strong if word in text), None)
     if intent:
-        return f'Olası hizmet talebi · cihaz/iş: {service}; ifade: {intent}. Konum ve ihtiyaç doğrulanmalı.'
+        reason = f'Olası hizmet talebi · cihaz/iş: {service}; ifade: {intent}. Konum ve ihtiyaç doğrulanmalı.'
+        return reason, reason
     # Açık arıza veya montaj ifadelerini kullanıcı değerlendirmesi için ayrıca sakla.
     review = ('tamir', 'onarim', 'montaj', 'kurulum', 'format at', 'ssd tak', 'ram tak',
               'ssd degis', 'ram degis', 'ekran degis', 'termal macun', 'bakim yap', 'arizali')
     hint = next((word for word in review if word in text), None)
     if hint:
-        return f'İncelenecek aday · cihaz/iş: {service}; ifade: {hint}. İş talebi ve konum doğrulanmadı.'
-    return None
+        reason = f'İncelenecek aday · cihaz/iş: {service}; ifade: {hint}. İş talebi ve konum doğrulanmadı.'
+        return reason, reason
+    return None, f'İlgili ifade: {service}; hizmet talebi veya bakım/montaj ifadesi bulunamadı.'
 
-def parse_feed(data):
+def classify(title, description):
+    return classify_detail(title, description)[0]
+
+def parse_feed_details(data):
     if len(data) > MAX_BYTES: raise ScanError('Akış boyutu güvenlik sınırını aştı.')
     if b'<!DOCTYPE' in data.upper() or b'<!ENTITY' in data.upper(): raise ScanError('Akışta desteklenmeyen XML bildirimi var.')
     try: root = ET.fromstring(data)
@@ -66,6 +73,7 @@ def parse_feed(data):
     if root.tag not in ('rss', 'rdf', '{http://www.w3.org/1999/02/22-rdf-syntax-ns#}RDF', atom+'feed'):
         raise ScanError('Yanıt geçerli bir RSS/Atom akışı değil.')
     found = []
+    examined = []
     for entry in entries[:300]:
         title = plain_text(entry.findtext('title') or entry.findtext(atom+'title') or '')
         desc = plain_text(entry.findtext('description') or entry.findtext(atom+'summary') or entry.findtext(atom+'content') or '')
@@ -73,10 +81,16 @@ def parse_feed(data):
         if not link:
             el = entry.find(atom+'link'); link = el.get('href','').strip() if el is not None else ''
         parsed = urlsplit(link)
-        if parsed.scheme not in ('http','https') or not parsed.hostname or not title: continue
-        reason = classify(title,desc)
+        if parsed.scheme not in ('http','https') or not parsed.hostname or not title:
+            examined.append({'title': title or '(Başlık yok)', 'url': '', 'decision': 'Elenmiş', 'reason': 'Eksik başlık veya geçersiz bağlantı.'}); continue
+        reason, explanation = classify_detail(title,desc)
+        examined.append({'title':title[:500], 'url':link[:2048], 'decision':'Aday' if reason else 'Elenmiş', 'reason':explanation})
         if reason: found.append({'title':title[:500], 'description':desc, 'url':link[:2048], 'reason':reason})
-    return len(entries), found
+    return len(entries), found, examined
+
+def parse_feed(data):
+    count, found, _ = parse_feed_details(data)
+    return count, found
 
 def validate_feed_url(url):
     parsed = urlsplit(url.strip())
@@ -99,5 +113,5 @@ def fetch_feed(name, timeout=15, url=None):
         raise ScanError(f'HTTP {exc.code}: akışa erişilemedi.') from exc
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
         raise ScanError('Bağlantı başarısız veya zaman aşımına uğradı.') from exc
-    count, candidates = parse_feed(data)
-    return {'source':name,'count':count,'candidates':candidates}
+    total, candidates, examined = parse_feed_details(data)
+    return {'source':name,'count':len(examined),'total':total,'candidates':candidates,'examined':examined}

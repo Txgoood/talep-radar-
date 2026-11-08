@@ -16,13 +16,17 @@ with tempfile.TemporaryDirectory() as directory:
     assert db.leads()[0]['note'] == 'Akşam'
     db.set_setting('stop_sending', '1')
     assert Database(Path(directory) / 'test.sqlite').get_setting('stop_sending') == '1'
-    window = MainWindow('0.3.0', 'test')
+    window = MainWindow('0.4.0', 'test')
     window.show()
     app.processEvents()
     for i in range(window.stack.count()):
         window.nav.setCurrentRow(i)
         app.processEvents()
-    assert '0.3.0' in window.windowTitle() and 'test' in window.windowTitle()
+    assert '0.4.0' in window.windowTitle() and 'test' in window.windowTitle()
     assert LeadDialog(window).title is not None
+    assert len(window.source_rows) > 30
+    assert sum(1 for row in window.source_rows if row['scan']) >= 5
+    window.scan_result({'source': 'Kontrol', 'count': 1, 'candidates': [], 'examined': [{'title':'Deneme', 'url':'https://example.com', 'decision':'Elenmiş', 'reason':'Eşleşme yok'}]})
+    assert window.scan_examined[0]['reason'] == 'Eşleşme yok'
     window.close()
 print('SQLite and UI smoke checks passed')

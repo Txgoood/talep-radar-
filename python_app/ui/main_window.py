@@ -4,6 +4,7 @@ from PySide6.QtWidgets import (QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, Q
     QPushButton, QListWidget, QStackedWidget, QTableWidget, QTableWidgetItem, QHeaderView,
     QFormLayout, QLineEdit, QTextEdit, QComboBox, QDialog, QDialogButtonBox, QMessageBox, QSplitter)
 from database import Database
+from source_catalog import CATALOG
 from scanner import SOURCES, ScanError, fetch_feed, validate_feed_url
 
 STYLE = '''
@@ -45,7 +46,7 @@ class LeadDialog(QDialog):
 
 class MainWindow(QMainWindow):
     def __init__(self, version, build):
-        super().__init__(); self.version=version; self.build=build; self.db=Database(); self.rows=[]; self.scan_worker=None; self.scan_messages=[]
+        super().__init__(); self.version=version; self.build=build; self.db=Database(); self.rows=[]; self.scan_worker=None; self.scan_messages=[]; self.scan_examined=[]
         self.setWindowTitle(f'Talep Radarı · v{version} · Build {build}'); self.resize(1440,900); self.setMinimumSize(900,600); self.setStyleSheet(STYLE)
         root=QWidget(); self.setCentralWidget(root); layout=QHBoxLayout(root); layout.setContentsMargins(0,0,0,0); layout.setSpacing(0)
         side=QWidget(); side.setFixedWidth(225); side.setStyleSheet('background:#142033'); sl=QVBoxLayout(side)
@@ -83,28 +84,34 @@ class MainWindow(QMainWindow):
         top=QHBoxLayout(); self.summary=QLabel(); self.summary.setStyleSheet('background:#142033;padding:20px;font-size:16px;'); top.addWidget(self.summary,1)
         self.scan_button=QPushButton('⟳  Manuel Tara (F5)'); self.scan_button.setObjectName('primary'); self.scan_button.clicked.connect(self.start_scan); top.addWidget(self.scan_button); v.addLayout(top)
         self.scan_status=QLabel('Tarama henüz yapılmadı. Akışın sunduğu son kayıtlar incelenir.'); self.scan_status.setWordWrap(True); self.scan_status.setStyleSheet('background:#142033;padding:15px;'); v.addWidget(self.scan_status)
+        audit=QPushButton('Son taramada incelenenleri göster'); audit.clicked.connect(self.show_scan_audit); v.addWidget(audit)
         button=QPushButton('Talepleri İncele'); button.clicked.connect(lambda:self.nav.setCurrentRow(1)); v.addWidget(button)
         v.addWidget(QLabel('Telegram: Bağlı değil   |   Yerel model: Kullanılmıyor   |   Gönderim: Desteklenmiyor'))
         v.addStretch(); return w
     def make_sources(self):
         w,v=self.page('Kaynaklar ve Adaptör Yetenek Matrisi','RSS/Atom keşfi · Salt okunur · Erişim tarama sırasında doğrulanır')
-        self.source_table=QTableWidget(0,3); self.source_table.setHorizontalHeaderLabels(['KAYNAK','RSS ADRESİ','YETENEK'])
+        self.source_table=QTableWidget(0,3); self.source_table.setHorizontalHeaderLabels(['KAYNAK','ADRES','ERİŞİM DURUMU'])
         self.source_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.source_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows); self.source_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         v.addWidget(self.source_table,1)
         actions=QHBoxLayout(); add=QPushButton('+ RSS Kaynağı Ekle'); add.setObjectName('primary'); add.clicked.connect(self.add_source); actions.addWidget(add)
+        open_button=QPushButton('Seçilen kaynağı aç'); open_button.clicked.connect(self.open_catalog_source); actions.addWidget(open_button)
         remove=QPushButton('Seçilen özel kaynağı kaldır'); remove.clicked.connect(self.remove_source); actions.addWidget(remove); v.addLayout(actions)
         from PySide6.QtWidgets import QCheckBox
         self.auto_scan=QCheckBox('30 dakikada bir tara (uygulama açıkken)'); self.auto_scan.toggled.connect(self.set_auto_scan); v.addWidget(self.auto_scan)
-        hint=QLabel('Site ana sayfası yerine herkese açık HTTPS RSS/Atom akışı ekleyin. Kaynağın son kayıtları incelenir. Hesapla giriş ve otomatik cevap gönderme henüz desteklenmiyor.')
+        hint=QLabel('Yalnızca RSS olarak işaretli kaynaklar taranır. Diğerleri araştırma listesidir. Özel kaynak için HTTPS RSS/Atom adresi gerekir. Hesapla giriş ve otomatik gönderim henüz desteklenmiyor.')
         hint.setWordWrap(True); v.addWidget(hint); self.refresh_sources(); return w
     def refresh_sources(self):
-        self.source_rows=[{'name':name,'url':url,'builtin':True} for name,url in SOURCES.items()]
-        self.source_rows += [dict(row, builtin=False) for row in self.db.custom_sources()]
+        self.source_rows=[{'name':name,'url':url,'builtin':True,'scan':True,'state':'RSS · test edilmedi'} for name,url in SOURCES.items()]
+        self.source_rows += [dict(row, builtin=False, scan=True, state='RSS · test edilmedi') for row in self.db.custom_sources()]
+        self.source_rows += [{'name':name,'url':url,'builtin':True,'scan':False,'state':state} for name,url,state in CATALOG]
         self.source_table.setRowCount(len(self.source_rows))
         for i,row in enumerate(self.source_rows):
-            for j,value in enumerate((row['name'],row['url'],'RSS: test edilmedi · Yazma yok')):
+            for j,value in enumerate((row['name'],row['url'],row['state'])):
                 self.source_table.setItem(i,j,QTableWidgetItem(value))
+    def open_catalog_source(self):
+        i=self.source_table.currentRow()
+        if 0 <= i < len(self.source_rows): QDesktopServices.openUrl(QUrl(self.source_rows[i]['url']))
     def add_source(self):
         dialog=QDialog(self); dialog.setWindowTitle('Özel RSS kaynağı ekle'); dialog.resize(580,200); form=QFormLayout(dialog)
         name=QLineEdit(); url=QLineEdit(); url.setPlaceholderText('https://site.example/rss')
@@ -133,10 +140,11 @@ class MainWindow(QMainWindow):
             self.timer.start() if checked else self.timer.stop()
     def start_scan(self):
         if self.scan_worker and self.scan_worker.isRunning(): return
-        self.scan_messages=[]; self.scan_status.setText('Kaynaklar taranıyor…'); self.scan_button.setEnabled(False)
-        sources={row['name']:row['url'] for row in self.source_rows}
+        self.scan_messages=[]; self.scan_examined=[]; self.scan_status.setText('Kaynaklar taranıyor…'); self.scan_button.setEnabled(False)
+        sources={row['name']:row['url'] for row in self.source_rows if row['scan']}
         self.scan_worker=ScanWorker(sources,self); self.scan_worker.result.connect(self.scan_result); self.scan_worker.source_error.connect(self.scan_error); self.scan_worker.finished.connect(self.scan_finished); self.scan_worker.start()
     def scan_result(self, result):
+        self.scan_examined.extend(dict(item, source=result['source']) for item in result.get('examined',[]))
         try:
             added=self.db.save_scan(result['source'],result['candidates'])
             self.set_source_state(result['source'], 'Erişildi · RSS okundu')
@@ -149,6 +157,22 @@ class MainWindow(QMainWindow):
     def scan_error(self, source, message):
         self.set_source_state(source, 'Erişilemedi')
         self.scan_messages.append(f'{source}: {message}')
+    def show_scan_audit(self):
+        dialog=QDialog(self); dialog.setWindowTitle('Son taramada incelenen kayıtlar'); dialog.resize(1100,650); layout=QVBoxLayout(dialog)
+        note=QLabel('Yalnızca bu oturumdaki son taramanın RSS kayıtları gösterilir. Her kaynak akışının sağladığı kayıtlar ve ilk 300 öğe ile sınırlıdır.'); note.setWordWrap(True); layout.addWidget(note)
+        table=QTableWidget(len(self.scan_examined),4); table.setHorizontalHeaderLabels(['KAYNAK','BAŞLIK','KARAR','GEREKÇE']); table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch); table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers); table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        for i,item in enumerate(self.scan_examined):
+            for j,key in enumerate(('source','title','decision','reason')):
+                table.setItem(i,j,QTableWidgetItem(item[key]))
+        layout.addWidget(table)
+        open_btn=QPushButton('Seçilen kaynağı tarayıcıda aç')
+        def open_record():
+            i=table.currentRow()
+            if 0 <= i < len(self.scan_examined) and self.scan_examined[i]['url']:
+                QDesktopServices.openUrl(QUrl(self.scan_examined[i]['url']))
+        open_btn.clicked.connect(open_record); layout.addWidget(open_btn)
+        if not self.scan_examined: note.setText('Henüz incelenmiş kayıt yok. Önce Manuel Tara düğmesine basın veya kaynak hatalarını kontrol edin.')
+        dialog.exec()
     def scan_finished(self):
         self.scan_status.setText('\n'.join(self.scan_messages)); self.scan_button.setEnabled(True); self.refresh()
     def closeEvent(self, event):

@@ -22,6 +22,19 @@ class ScannerTest(unittest.TestCase):
             self.assertEqual(db.save_scan('Test',results),0)
             self.assertEqual(len(db.leads()),1)
             self.assertEqual(db.leads()[0]['location'],'Konum doğrulanmalı')
+    def test_audit_shows_candidates_and_rejections(self):
+        from scanner import parse_feed_details
+        total, candidates, examined = parse_feed_details(RSS)
+        self.assertEqual(total, 2)
+        self.assertEqual(len(examined), 2)
+        self.assertEqual([x['decision'] for x in examined], ['Aday', 'Elenmiş'])
+        self.assertTrue(examined[1]['reason'])
+        self.assertEqual(len(candidates), 1)
+    def test_catalog_is_not_mistaken_for_scannable_feeds(self):
+        from source_catalog import CATALOG
+        from scanner import SOURCES
+        self.assertGreater(len(CATALOG), 30)
+        self.assertTrue(all(name not in SOURCES for name, _, _ in CATALOG))
     def test_custom_sources_and_url_validation(self):
         from scanner import validate_feed_url
         with tempfile.TemporaryDirectory() as directory:
