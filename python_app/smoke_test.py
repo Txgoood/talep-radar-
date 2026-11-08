@@ -25,4 +25,4 @@ with tempfile.TemporaryDirectory() as directory:
     assert '0.1.0' in window.windowTitle() and 'test' in window.windowTitle()
     assert LeadDialog(window).title is not None
     window.close()
-print('SQLite ve arayüz açılış kontrolleri başarılı')
+print('SQLite and UI smoke checks passed')
