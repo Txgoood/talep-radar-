@@ -20,6 +20,9 @@ class Database:
               description TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'Yeni',
               note TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
             CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS scanned_items (
+              source TEXT NOT NULL, url TEXT NOT NULL, lead_id INTEGER NOT NULL,
+              PRIMARY KEY(source,url), FOREIGN KEY(lead_id) REFERENCES leads(id));
             ''')
     def connect(self):
         db = sqlite3.connect(self.path, timeout=5)
@@ -41,3 +44,15 @@ class Database:
     def set_setting(self, key, value):
         with self.connect() as db:
             db.execute('INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value', (key,value))
+
+    def save_scan(self, source, items):
+        added = 0
+        with self.connect() as db:
+            for item in items:
+                exists = db.execute('SELECT 1 FROM scanned_items WHERE source=? AND url=?', (source,item['url'])).fetchone()
+                if exists: continue
+                cur = db.execute("INSERT INTO leads(title,source,url,location,description) VALUES(?,?,?,?,?)",
+                    (item['title'], source, item['url'], 'Konum doğrulanmalı', item['description'] + "\n\nEşleşme: " + item['reason']))
+                db.execute('INSERT INTO scanned_items(source,url,lead_id) VALUES(?,?,?)', (source,item['url'],cur.lastrowid))
+                added += 1
+        return added
