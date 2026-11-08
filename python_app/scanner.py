@@ -10,6 +10,8 @@ from urllib.parse import urlsplit
 SOURCES = {
     'Techolay Sosyal': 'https://techolay.net/sosyal/bolum/-/index.rss',
     'Technopat Sosyal': 'https://www.technopat.net/sosyal/bolum/-/index.rss',
+    'Techolay Teknik Destek': 'https://techolay.net/sosyal/bolum/teknik-destek.10/index.rss',
+    'Technopat Teknik Destek': 'https://www.technopat.net/sosyal/bolum/teknik-destek.230/index.rss',
 }
 MAX_BYTES = 2_000_000
 
@@ -76,8 +78,17 @@ def parse_feed(data):
         if reason: found.append({'title':title[:500], 'description':desc, 'url':link[:2048], 'reason':reason})
     return len(entries), found
 
-def fetch_feed(name, timeout=15):
-    url = SOURCES[name]
+def validate_feed_url(url):
+    parsed = urlsplit(url.strip())
+    if parsed.scheme != 'https' or not parsed.hostname or parsed.username or parsed.password or parsed.fragment:
+        raise ValueError('Kullanıcı bilgisi içermeyen geçerli bir HTTPS RSS adresi girin.')
+    # Özel adresler veritabanında saklandığından sır içeren parametreleri kabul etme.
+    if re.search(r'(?i)(?:^|[?&])(token|password|secret|key|api_key|access_token)=', parsed.query):
+        raise ValueError('Gizli anahtar içeren adresler eklenemez.')
+    return url.strip()
+
+def fetch_feed(name, timeout=15, url=None):
+    url = validate_feed_url(url or SOURCES[name])
     request = urllib.request.Request(url, headers={'User-Agent':'TalepRadari/0.2 (RSS reader)', 'Accept':'application/rss+xml, application/atom+xml, application/xml, text/xml'})
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:

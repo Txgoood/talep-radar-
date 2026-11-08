@@ -4,7 +4,7 @@ from PySide6.QtWidgets import (QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, Q
     QPushButton, QListWidget, QStackedWidget, QTableWidget, QTableWidgetItem, QHeaderView,
     QFormLayout, QLineEdit, QTextEdit, QComboBox, QDialog, QDialogButtonBox, QMessageBox, QSplitter)
 from database import Database
-from scanner import SOURCES, ScanError, fetch_feed
+from scanner import SOURCES, ScanError, fetch_feed, validate_feed_url
 
 STYLE = '''
 QWidget { background:#0B1220; color:#E8EEF7; font-family:Segoe UI; font-size:13px; }
@@ -22,10 +22,12 @@ QListWidget::item {padding:11px;} QListWidget::item:selected {background:#60A5FA
 class ScanWorker(QThread):
     result = Signal(dict)
     source_error = Signal(str, str)
+    def __init__(self, sources, parent=None):
+        super().__init__(parent); self.sources = sources
     def run(self):
-        for source in SOURCES:
+        for source, url in self.sources.items():
             try:
-                self.result.emit(fetch_feed(source))
+                self.result.emit(fetch_feed(source, url=url))
             except Exception as exc:
                 self.source_error.emit(source, str(exc))
 
@@ -85,14 +87,46 @@ class MainWindow(QMainWindow):
         v.addWidget(QLabel('Telegram: Bağlı değil   |   Yerel model: Kullanılmıyor   |   Gönderim: Desteklenmiyor'))
         v.addStretch(); return w
     def make_sources(self):
-        w,v=self.page('Kaynaklar ve Adaptör Yetenek Matrisi','RSS keşfi · Salt okunur · Kaynakların erişimi her taramada doğrulanır')
-        for name,url in SOURCES.items():
-            label=QLabel(f'{name}    •    RSS okuma denemesi    •    Yanıt gönderme: Desteklenmiyor\n{url}')
-            label.setWordWrap(True); label.setStyleSheet('background:#142033;padding:15px;'); v.addWidget(label)
+        w,v=self.page('Kaynaklar ve Adaptör Yetenek Matrisi','RSS/Atom keşfi · Salt okunur · Erişim tarama sırasında doğrulanır')
+        self.source_table=QTableWidget(0,3); self.source_table.setHorizontalHeaderLabels(['KAYNAK','RSS ADRESİ','YETENEK'])
+        self.source_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.source_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows); self.source_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        v.addWidget(self.source_table,1)
+        actions=QHBoxLayout(); add=QPushButton('+ RSS Kaynağı Ekle'); add.setObjectName('primary'); add.clicked.connect(self.add_source); actions.addWidget(add)
+        remove=QPushButton('Seçilen özel kaynağı kaldır'); remove.clicked.connect(self.remove_source); actions.addWidget(remove); v.addLayout(actions)
         from PySide6.QtWidgets import QCheckBox
         self.auto_scan=QCheckBox('30 dakikada bir tara (uygulama açıkken)'); self.auto_scan.toggled.connect(self.set_auto_scan); v.addWidget(self.auto_scan)
-        hint=QLabel('Her kaynak yalnızca akışında verdiği son kayıtları sunar (çoğunlukla 20). Olası talepler ve daha geniş inceleme adayları listelenir; gerçek ihtiyaç ve konumu kontrol edin. Erişim hatası, talep yok demek değildir.')
-        hint.setWordWrap(True); v.addWidget(hint); v.addStretch(); return w
+        hint=QLabel('Site ana sayfası yerine herkese açık HTTPS RSS/Atom akışı ekleyin. Kaynağın son kayıtları incelenir. Hesapla giriş ve otomatik cevap gönderme henüz desteklenmiyor.')
+        hint.setWordWrap(True); v.addWidget(hint); self.refresh_sources(); return w
+    def refresh_sources(self):
+        self.source_rows=[{'name':name,'url':url,'builtin':True} for name,url in SOURCES.items()]
+        self.source_rows += [dict(row, builtin=False) for row in self.db.custom_sources()]
+        self.source_table.setRowCount(len(self.source_rows))
+        for i,row in enumerate(self.source_rows):
+            for j,value in enumerate((row['name'],row['url'],'RSS: test edilmedi · Yazma yok')):
+                self.source_table.setItem(i,j,QTableWidgetItem(value))
+    def add_source(self):
+        dialog=QDialog(self); dialog.setWindowTitle('Özel RSS kaynağı ekle'); dialog.resize(580,200); form=QFormLayout(dialog)
+        name=QLineEdit(); url=QLineEdit(); url.setPlaceholderText('https://site.example/rss')
+        form.addRow('Kaynak adı',name); form.addRow('HTTPS RSS/Atom adresi',url)
+        note=QLabel('Giriş bilgisi veya gizli anahtar içeren adresler eklenmez.'); note.setWordWrap(True); form.addRow(note)
+        buttons=QDialogButtonBox(QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel)
+        buttons.accepted.connect(dialog.accept); buttons.rejected.connect(dialog.reject); form.addRow(buttons)
+        if not dialog.exec(): return
+        try:
+            source_name=name.text().strip()
+            source_url=validate_feed_url(url.text())
+            if not source_name or len(source_name)>100: raise ValueError('1–100 karakterlik bir kaynak adı girin.')
+            if any(row['name'].casefold()==source_name.casefold() or row['url']==source_url for row in self.source_rows): raise ValueError('Bu ad veya adres zaten kayıtlı.')
+            self.db.add_source(source_name,source_url); self.refresh_sources()
+        except Exception as exc:
+            QMessageBox.warning(self,'Kaynak eklenemedi', str(exc))
+    def remove_source(self):
+        i=self.source_table.currentRow()
+        if i < 0 or i >= len(self.source_rows): return
+        row=self.source_rows[i]
+        if row['builtin']: QMessageBox.information(self,'Kaynak','Hazır kaynaklar bu ekrandan kaldırılamaz.'); return
+        self.db.remove_source(row['name']); self.refresh_sources()
     def set_auto_scan(self, checked):
         self.db.set_setting('auto_scan','1' if checked else '0')
         if hasattr(self,'timer'):
@@ -100,14 +134,20 @@ class MainWindow(QMainWindow):
     def start_scan(self):
         if self.scan_worker and self.scan_worker.isRunning(): return
         self.scan_messages=[]; self.scan_status.setText('Kaynaklar taranıyor…'); self.scan_button.setEnabled(False)
-        self.scan_worker=ScanWorker(self); self.scan_worker.result.connect(self.scan_result); self.scan_worker.source_error.connect(self.scan_error); self.scan_worker.finished.connect(self.scan_finished); self.scan_worker.start()
+        sources={row['name']:row['url'] for row in self.source_rows}
+        self.scan_worker=ScanWorker(sources,self); self.scan_worker.result.connect(self.scan_result); self.scan_worker.source_error.connect(self.scan_error); self.scan_worker.finished.connect(self.scan_finished); self.scan_worker.start()
     def scan_result(self, result):
         try:
             added=self.db.save_scan(result['source'],result['candidates'])
+            self.set_source_state(result['source'], 'Erişildi · RSS okundu')
             self.scan_messages.append(f"{result['source']}: {result['count']} kayıt incelendi, {len(result['candidates'])} olası/inceleme adayı, {added} yeni kayıt. Yalnızca RSS akışının sunduğu kayıtlar incelendi.")
         except Exception:
             self.scan_messages.append(f"{result['source']}: sonuçlar kaydedilemedi; tekrar deneyin.")
+    def set_source_state(self, source, state):
+        for i,row in enumerate(self.source_rows):
+            if row['name']==source: self.source_table.setItem(i,2,QTableWidgetItem(state + ' · Yazma yok'))
     def scan_error(self, source, message):
+        self.set_source_state(source, 'Erişilemedi')
         self.scan_messages.append(f'{source}: {message}')
     def scan_finished(self):
         self.scan_status.setText('\n'.join(self.scan_messages)); self.scan_button.setEnabled(True); self.refresh()

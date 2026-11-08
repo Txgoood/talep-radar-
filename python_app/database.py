@@ -21,6 +21,8 @@ class Database:
               description TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'Yeni',
               note TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
             CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS custom_sources (
+              name TEXT NOT NULL PRIMARY KEY, url TEXT NOT NULL UNIQUE);
             CREATE TABLE IF NOT EXISTS scanned_items (
               source TEXT NOT NULL, url TEXT NOT NULL, lead_id INTEGER NOT NULL,
               PRIMARY KEY(source,url), FOREIGN KEY(lead_id) REFERENCES leads(id));
@@ -55,10 +57,22 @@ class Database:
         added = 0
         with self.connect() as db:
             for item in items:
-                exists = db.execute('SELECT 1 FROM scanned_items WHERE source=? AND url=?', (source,item['url'])).fetchone()
+                exists = db.execute('SELECT 1 FROM scanned_items WHERE url=?', (item['url'],)).fetchone()
                 if exists: continue
                 cur = db.execute("INSERT INTO leads(title,source,url,location,description) VALUES(?,?,?,?,?)",
                     (item['title'], source, item['url'], 'Konum doğrulanmalı', item['description'] + "\n\nEşleşme: " + item['reason']))
                 db.execute('INSERT INTO scanned_items(source,url,lead_id) VALUES(?,?,?)', (source,item['url'],cur.lastrowid))
                 added += 1
         return added
+
+    def custom_sources(self):
+        with self.connect() as db:
+            return [dict(row) for row in db.execute('SELECT name, url FROM custom_sources ORDER BY name COLLATE NOCASE')]
+    def add_source(self, name, url):
+        with self.connect() as db:
+            if db.execute('SELECT COUNT(*) FROM custom_sources').fetchone()[0] >= 20:
+                raise ValueError('En fazla 20 özel kaynak eklenebilir.')
+            db.execute('INSERT INTO custom_sources(name,url) VALUES(?,?)', (name,url))
+    def remove_source(self, name):
+        with self.connect() as db:
+            db.execute('DELETE FROM custom_sources WHERE name=?', (name,))

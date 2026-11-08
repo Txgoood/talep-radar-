@@ -22,6 +22,23 @@ class ScannerTest(unittest.TestCase):
             self.assertEqual(db.save_scan('Test',results),0)
             self.assertEqual(len(db.leads()),1)
             self.assertEqual(db.leads()[0]['location'],'Konum doğrulanmalı')
+    def test_custom_sources_and_url_validation(self):
+        from scanner import validate_feed_url
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/'source.db'
+            db = Database(path)
+            db.add_source('Test RSS', validate_feed_url('https://example.com/feed'))
+            self.assertEqual(Database(path).custom_sources()[0]['name'], 'Test RSS')
+            db.remove_source('Test RSS')
+            self.assertEqual(db.custom_sources(), [])
+        for unsafe in ('http://example.com/rss', 'https://u:password@example.com/feed', 'https://example.com/feed?token=secret'):
+            with self.assertRaises(ValueError): validate_feed_url(unsafe)
+    def test_cross_feed_dedup(self):
+        _, items = parse_feed(RSS)
+        with tempfile.TemporaryDirectory() as directory:
+            db=Database(Path(directory)/'test.db')
+            self.assertEqual(db.save_scan('Genel',items),1)
+            self.assertEqual(db.save_scan('Teknik Destek',items),0)
     def test_turkish_candidate_classification(self):
         from scanner import classify
         self.assertIn('Olası hizmet talebi', classify('Kadıköy bilgisayar tamiri için usta arıyorum', ''))

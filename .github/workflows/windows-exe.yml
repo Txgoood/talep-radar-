@@ -1,4 +1,4 @@
-name: Talep Radarı v0.2.1 Windows EXE
+name: Talep Radarı v0.3.0 Windows EXE
 on:
   push:
     branches: [ilk-surum]
@@ -18,7 +18,7 @@ jobs:
       - name: Stamp build number
         shell: pwsh
         run: |
-          $text = "VERSION = '0.2.1'`nBUILD = '${{ github.run_number }}'`n"
+          $text = "VERSION = '0.3.0'`nBUILD = '${{ github.run_number }}'`n"
           [System.IO.File]::WriteAllText('python_app/version.py', $text)
       - name: Test RSS filtering and persistence
         run: python -m unittest discover -s python_app -p test_scanner.py
@@ -31,9 +31,9 @@ jobs:
           PYTHONIOENCODING: utf-8
         run: python python_app/live_probe.py
       - name: Build Windows executable
-        run: python -m PyInstaller --noconfirm --clean --onefile --windowed --name TalepRadari-v0.2.1-build-${{ github.run_number }} python_app/main.py
+        run: python -m PyInstaller --noconfirm --clean --onefile --windowed --icon python_app/app.ico --add-data "python_app/app.ico;." --name TalepRadari-v0.3.0-build-${{ github.run_number }} python_app/main.py
       - uses: actions/upload-artifact@v4
         with:
-          name: TalepRadari-v0.2.1-build-${{ github.run_number }}
+          name: TalepRadari-v0.3.0-build-${{ github.run_number }}
           path: dist/*.exe
           if-no-files-found: error
