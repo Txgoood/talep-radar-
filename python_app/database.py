@@ -1,4 +1,5 @@
 import sqlite3
+from contextlib import contextmanager
 from pathlib import Path
 import os
 
@@ -24,10 +25,15 @@ class Database:
               source TEXT NOT NULL, url TEXT NOT NULL, lead_id INTEGER NOT NULL,
               PRIMARY KEY(source,url), FOREIGN KEY(lead_id) REFERENCES leads(id));
             ''')
+    @contextmanager
     def connect(self):
         db = sqlite3.connect(self.path, timeout=5)
         db.row_factory = sqlite3.Row
-        return db
+        try:
+            with db:
+                yield db
+        finally:
+            db.close()
     def add_lead(self, title, source, url, location, description):
         if not title.strip(): raise ValueError('Başlık gerekli')
         with self.connect() as db:
