@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, Q
     QFormLayout, QLineEdit, QTextEdit, QComboBox, QDialog, QDialogButtonBox, QMessageBox, QSplitter)
 from database import Database
 from source_catalog import CATALOG
+from imported_catalog import IMPORTED
 from scanner import SOURCES, ScanError, fetch_feed, validate_feed_url
 
 STYLE = '''
@@ -99,19 +100,24 @@ class MainWindow(QMainWindow):
         remove=QPushButton('Seçilen özel kaynağı kaldır'); remove.clicked.connect(self.remove_source); actions.addWidget(remove); v.addLayout(actions)
         from PySide6.QtWidgets import QCheckBox
         self.auto_scan=QCheckBox('30 dakikada bir tara (uygulama açıkken)'); self.auto_scan.toggled.connect(self.set_auto_scan); v.addWidget(self.auto_scan)
-        hint=QLabel('Yalnızca RSS olarak işaretli kaynaklar taranır. Diğerleri araştırma listesidir. Özel kaynak için HTTPS RSS/Atom adresi gerekir. Hesapla giriş ve otomatik gönderim henüz desteklenmiyor.')
+        hint=QLabel('Yalnızca RSS olarak işaretli kaynaklar taranır. Belge adresleri araştırma listesidir; adres ve içerik doğrulanmamıştır. Hesapla giriş ve otomatik gönderim desteklenmiyor.')
         hint.setWordWrap(True); v.addWidget(hint); self.refresh_sources(); return w
     def refresh_sources(self):
         self.source_rows=[{'name':name,'url':url,'builtin':True,'scan':True,'state':'RSS · test edilmedi'} for name,url in SOURCES.items()]
         self.source_rows += [dict(row, builtin=False, scan=True, state='RSS · test edilmedi') for row in self.db.custom_sources()]
-        self.source_rows += [{'name':name,'url':url,'builtin':True,'scan':False,'state':state} for name,url,state in CATALOG]
+        self.source_rows += [{'name':name,'url':url,'builtin':True,'scan':False,'state':state} for name,url,state in CATALOG + IMPORTED]
         self.source_table.setRowCount(len(self.source_rows))
         for i,row in enumerate(self.source_rows):
             for j,value in enumerate((row['name'],row['url'],row['state'])):
                 self.source_table.setItem(i,j,QTableWidgetItem(value))
     def open_catalog_source(self):
         i=self.source_table.currentRow()
-        if 0 <= i < len(self.source_rows): QDesktopServices.openUrl(QUrl(self.source_rows[i]['url']))
+        if not (0 <= i < len(self.source_rows)): return
+        row=self.source_rows[i]
+        if row['name'].startswith('Belge #'):
+            choice=QMessageBox.question(self,'Doğrulanmamış bağlantı','Bu adres kullanıcı listesinden alındı, erişimi ve içeriği doğrulanmadı. Tarayıcıda açılsın mı?')
+            if choice != QMessageBox.StandardButton.Yes: return
+        QDesktopServices.openUrl(QUrl(row['url']))
     def add_source(self):
         dialog=QDialog(self); dialog.setWindowTitle('Özel RSS kaynağı ekle'); dialog.resize(580,200); form=QFormLayout(dialog)
         name=QLineEdit(); url=QLineEdit(); url.setPlaceholderText('https://site.example/rss')
