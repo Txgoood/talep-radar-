@@ -1,0 +1,33 @@
+name: Talep Radarı v0.1.0 Windows EXE
+on:
+  push:
+    branches: [ilk-surum]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: python -m pip install -r python_app/requirements.txt pyinstaller
+      - name: Stamp build number
+        shell: pwsh
+        run: |
+          $text = "VERSION = '0.1.0'`nBUILD = '${{ github.run_number }}'`n"
+          [System.IO.File]::WriteAllText('python_app/version.py', $text)
+      - name: Check application and database
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python python_app/smoke_test.py
+      - name: Build Windows executable
+        run: python -m PyInstaller --noconfirm --clean --onefile --windowed --name TalepRadari-v0.1.0-build-${{ github.run_number }} python_app/main.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TalepRadari-v0.1.0-build-${{ github.run_number }}
+          path: dist/*.exe
+          if-no-files-found: error
