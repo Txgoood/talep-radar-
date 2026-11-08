@@ -1,0 +1,26 @@
+name: Talep Radarı Windows EXE test
+on:
+  push:
+    branches: [windows-exe-test]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: python -m pip install -r python_app/requirements.txt pyinstaller
+      - name: Compile Python files
+        run: python -m compileall -q python_app
+      - name: Build EXE
+        run: python -m PyInstaller --noconfirm --clean --onefile --windowed --name TalepRadari python_app/main.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TalepRadari-EXE-test
+          path: dist/TalepRadari.exe
+          if-no-files-found: error
