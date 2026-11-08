@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, Q
 from database import Database
 from source_catalog import CATALOG
 from imported_catalog import IMPORTED
-from scanner import SOURCES, ScanError, fetch_feed, validate_feed_url, classify_detail, discover_feed_url
+from scanner import SOURCES, ScanError, fetch_feed, validate_feed_url, classify_detail, discover_feed_url, fetch_web
 
 STYLE = '''
 QWidget { background:#0B1220; color:#E8EEF7; font-family:Segoe UI; font-size:13px; }
@@ -29,7 +29,7 @@ class ScanWorker(QThread):
     def run(self):
         for source, url in self.sources.items():
             try:
-                self.result.emit(fetch_feed(source, url=url))
+                self.result.emit(fetch_web(source,url) if source.startswith('WEB · ') else fetch_feed(source, url=url))
             except Exception as exc:
                 self.source_error.emit(source, str(exc))
 
@@ -40,7 +40,12 @@ class DiscoveryWorker(QThread):
         super().__init__(parent); self.name=name; self.url=url
     def run(self):
         try: self.found.emit(self.name, discover_feed_url(self.url))
-        except Exception as exc: self.failed.emit(self.name, str(exc))
+        except Exception as rss_error:
+            try:
+                fetch_web(self.name,self.url)
+                self.found.emit('WEB · '+self.name,self.url)
+            except Exception as web_error:
+                self.failed.emit(self.name, f'RSS: {rss_error} | Sayfa okuma: {web_error}')
 
 class LeadDialog(QDialog):
     def __init__(self, parent=None):
@@ -105,16 +110,16 @@ class MainWindow(QMainWindow):
         self.source_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows); self.source_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         v.addWidget(self.source_table,1)
         actions=QHBoxLayout(); add=QPushButton('+ RSS Kaynağı Ekle'); add.setObjectName('primary'); add.clicked.connect(self.add_source); actions.addWidget(add)
-        self.discover_button=QPushButton('Seçilende RSS bul ve taramaya ekle'); self.discover_button.clicked.connect(self.discover_source); actions.addWidget(self.discover_button)
+        self.discover_button=QPushButton('Seçileni doğrula ve taramaya ekle'); self.discover_button.clicked.connect(self.discover_source); actions.addWidget(self.discover_button)
         open_button=QPushButton('Seçilen kaynağı aç'); open_button.clicked.connect(self.open_catalog_source); actions.addWidget(open_button)
         remove=QPushButton('Seçilen özel kaynağı kaldır'); remove.clicked.connect(self.remove_source); actions.addWidget(remove); v.addLayout(actions)
         from PySide6.QtWidgets import QCheckBox
         self.auto_scan=QCheckBox('30 dakikada bir tara (uygulama açıkken)'); self.auto_scan.toggled.connect(self.set_auto_scan); v.addWidget(self.auto_scan)
-        hint=QLabel('Seçilen kaynakta RSS bul düğmesiyle uygun kaynakları taramaya ekleyin. Yalnızca RSS olarak işaretli kaynaklar taranır. Belge adresleri araştırma listesidir; adres ve içerik doğrulanmamıştır. Hesapla giriş ve otomatik gönderim desteklenmiyor.')
+        hint=QLabel('Seçileni doğrula düğmesi önce RSS, ardından açık forum/ilan sayfası okumayı dener. Başarıyla eklenen RSS ve HTML kaynakları Manuel Tara ile okunur. Belge adresleri araştırma listesidir; adres ve içerik doğrulanmamıştır. Hesapla giriş ve otomatik gönderim desteklenmiyor.')
         hint.setWordWrap(True); v.addWidget(hint); self.refresh_sources(); return w
     def refresh_sources(self):
         self.source_rows=[{'name':name,'url':url,'builtin':True,'scan':True,'state':'RSS · test edilmedi'} for name,url in SOURCES.items()]
-        self.source_rows += [dict(row, builtin=False, scan=True, state='RSS · test edilmedi') for row in self.db.custom_sources()]
+        self.source_rows += [dict(row, builtin=False, scan=True, state=('HTML liste · test edilmedi' if row['name'].startswith('WEB · ') else 'RSS · test edilmedi')) for row in self.db.custom_sources()]
         self.source_rows += [{'name':name,'url':url,'builtin':True,'scan':False,'state':state} for name,url,state in CATALOG + IMPORTED]
         self.source_table.setRowCount(len(self.source_rows))
         for i,row in enumerate(self.source_rows):
@@ -137,15 +142,15 @@ class MainWindow(QMainWindow):
             if any(row['scan'] and row['url']==url for row in self.source_rows):
                 self.set_source_state(name,'RSS zaten taranıyor'); return
             import hashlib
-            safe_name='RSS · ' + hashlib.sha256((name+'|'+url).encode('utf-8')).hexdigest()[:8] + ' · ' + name[:70]
+            safe_name=('WEB · ' if name.startswith('WEB · ') else 'RSS · ') + hashlib.sha256((name+'|'+url).encode('utf-8')).hexdigest()[:8] + ' · ' + name[:70]
             self.db.add_source(safe_name,url); self.refresh_sources()
-            self.set_source_state(name,'RSS eklendi; Manuel Tara ile okunur')
-            QMessageBox.information(self,'Kaynak eklendi','RSS akışı bulundu ve tarama listesine eklendi. Özet ekranında Manuel Tara düğmesine basabilirsiniz.')
+            self.set_source_state(name.removeprefix('WEB · '),'Tarama listesine eklendi')
+            QMessageBox.information(self,'Kaynak eklendi','Kaynak okuma testi geçti ve tarama listesine eklendi. Özet ekranında Manuel Tara düğmesine basabilirsiniz.')
         except Exception as exc:
             self.set_source_state(name,'Eklenemedi')
             QMessageBox.warning(self,'Eklenemedi',str(exc))
     def discovery_failed(self, name, reason):
-        self.set_source_state(name,'RSS bulunamadı veya erişim engellendi')
+        self.set_source_state(name,reason)
         QMessageBox.information(self,'Kaynak taranamıyor',reason)
     def open_catalog_source(self):
         i=self.source_table.currentRow()
@@ -191,15 +196,15 @@ class MainWindow(QMainWindow):
         self.scan_examined.extend(dict(item, source=result['source']) for item in result.get('examined',[]))
         try:
             added=self.db.save_scan(result['source'],result['candidates'])
-            self.set_source_state(result['source'], 'Erişildi · RSS okundu')
-            self.scan_messages.append(f"{result['source']}: {result['count']} kayıt incelendi, {len(result['candidates'])} olası/inceleme adayı, {added} yeni kayıt. Yalnızca RSS akışının sunduğu kayıtlar incelendi.")
+            self.set_source_state(result['source'], result.get('method','Erişildi · RSS okundu'))
+            self.scan_messages.append(f"{result['source']}: {result['count']} kayıt incelendi, {len(result['candidates'])} olası/inceleme adayı, {added} yeni kayıt. Okuma: {result.get('method', 'RSS akışı')}.")
         except Exception:
             self.scan_messages.append(f"{result['source']}: sonuçlar kaydedilemedi; tekrar deneyin.")
     def set_source_state(self, source, state):
         for i,row in enumerate(self.source_rows):
             if row['name']==source: self.source_table.setItem(i,2,QTableWidgetItem(state + ' · Yazma yok'))
     def scan_error(self, source, message):
-        self.set_source_state(source, 'Erişilemedi')
+        self.set_source_state(source, message)
         self.scan_messages.append(f'{source}: {message}')
     def show_scan_audit(self):
         dialog=QDialog(self); dialog.setWindowTitle('Son taramada incelenen kayıtlar'); dialog.resize(1100,650); layout=QVBoxLayout(dialog)
@@ -218,7 +223,7 @@ class MainWindow(QMainWindow):
         if not self.scan_examined: note.setText('Henüz incelenmiş kayıt yok. Önce Manuel Tara düğmesine basın veya kaynak hatalarını kontrol edin.')
         dialog.exec()
     def scan_finished(self):
-        self.scan_status.setText('\n'.join(self.scan_messages + [f'{self.scan_catalog_count} katalog kaynağı henüz RSS olarak eklenmediği için taranmadı.'])); self.scan_button.setEnabled(True); self.refresh()
+        self.scan_status.setText('\n'.join(self.scan_messages + [f'{self.scan_catalog_count} katalog kaynağı henüz taramaya eklenmediği için taranmadı.'])); self.scan_button.setEnabled(True); self.refresh()
     def closeEvent(self, event):
         if (self.scan_worker and self.scan_worker.isRunning()) or (self.discovery_worker and self.discovery_worker.isRunning()):
             QMessageBox.information(self, 'İşlem devam ediyor', 'Kaynak işlemi tamamlandığında pencereyi kapatabilirsiniz.'); event.ignore(); return

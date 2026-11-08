@@ -169,3 +169,52 @@ def discover_feed_url(site_url):
             return candidate
         except (ValueError,ScanError): continue
     raise ScanError('Sitede erişilebilen açık RSS/Atom akışı bulunamadı; otomatik tarama etkinleştirilmedi.')
+
+class ListingLinks(HTMLParser):
+    """Açık forum/ilan listesindeki içerik bağlantılarını toplar; menüleri talep saymaz."""
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.items=[]; self.current=None
+    def handle_starttag(self,tag,attrs):
+        attrs=dict(attrs)
+        if tag=='a': self.current=[attrs.get('href',''),[]]
+    def handle_data(self,data):
+        if self.current: self.current[1].append(data)
+    def handle_endtag(self,tag):
+        if tag=='a' and self.current:
+            self.items.append((self.current[0],plain_text(' '.join(self.current[1])))); self.current=None
+
+def parse_listing(data, page_url):
+    from urllib.parse import urljoin, urldefrag
+    if len(data)>MAX_BYTES: raise ScanError('Sayfa boyut sınırını aştı.')
+    parser=ListingLinks(); parser.feed(data.decode('utf-8',errors='replace'))
+    host=(urlsplit(page_url).hostname or '').removeprefix('www.')
+    seen=set(); examined=[]; found=[]
+    for href,title in parser.items:
+        link=urldefrag(urljoin(page_url,href))[0]; parts=urlsplit(link)
+        if parts.scheme!='https' or (parts.hostname or '').removeprefix('www.')!=host: continue
+        if not re.search(r'/(?:konu|threads|t|ilan|jobs?)/',parts.path,re.I): continue
+        if len(title)<12 or link in seen: continue
+        seen.add(link)
+        reason,explanation=classify_detail(title,'')
+        # Sadece başlık okunduğu için müşteri ihtiyacı kesinleşmiş sayılmaz.
+        examined.append({'title':title[:500],'url':link[:2048],'decision':'Aday' if reason else 'Elenmiş','reason':explanation+' Yalnızca liste başlığı okundu.'})
+        if reason: found.append({'title':title[:500],'url':link[:2048],'description':'Liste başlığı üzerinden bulundu; konu içeriği ve müşteri ihtiyacı doğrulanmalı.','reason':reason})
+        if len(examined)>=100: break
+    if not examined: raise ScanError('HTML erişildi; desteklenen forum/ilan bağlantısı bulunamadı. Bu adres için özel entegrasyon gerekiyor.')
+    return {'count':len(examined),'total':len(examined),'candidates':found,'examined':examined,'method':'HTML liste başlıkları'}
+
+def fetch_web(name,url,timeout=15):
+    url=validate_feed_url(url)
+    request=urllib.request.Request(url,headers={'User-Agent':'TalepRadari/0.5 (public listing reader)','Accept':'text/html'})
+    try:
+        with urllib.request.urlopen(request,timeout=timeout) as response:
+            final=response.geturl()
+            if (urlsplit(final).hostname or '').removeprefix('www.') != (urlsplit(url).hostname or '').removeprefix('www.'):
+                raise ScanError('HTML: site başka alan adına yönlendirdi.')
+            data=response.read(MAX_BYTES+1)
+    except urllib.error.HTTPError as exc:
+        raise ScanError(f'HTML HTTP {exc.code}: '+('hız sınırı; daha sonra deneyin.' if exc.code==429 else 'erişim reddedildi/oturum gerekli.' if exc.code in (401,403) else 'sayfa alınamadı.')) from exc
+    except (urllib.error.URLError,TimeoutError,OSError) as exc:
+        raise ScanError('HTML: bağlantı veya zaman aşımı hatası.') from exc
+    result=parse_listing(data,final); result['source']=name; return result

@@ -16,13 +16,13 @@ with tempfile.TemporaryDirectory() as directory:
     assert db.leads()[0]['note'] == 'Akşam'
     db.set_setting('stop_sending', '1')
     assert Database(Path(directory) / 'test.sqlite').get_setting('stop_sending') == '1'
-    window = MainWindow('0.4.3', 'test')
+    window = MainWindow('0.5.0', 'test')
     window.show()
     app.processEvents()
     for i in range(window.stack.count()):
         window.nav.setCurrentRow(i)
         app.processEvents()
-    assert '0.4.3' in window.windowTitle() and 'test' in window.windowTitle()
+    assert '0.5.0' in window.windowTitle() and 'test' in window.windowTitle()
     assert LeadDialog(window).title is not None
     assert window.discover_button.text()
     assert len(window.source_rows) >= 140

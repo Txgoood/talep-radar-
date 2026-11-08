@@ -98,4 +98,20 @@ class ScannerTest(unittest.TestCase):
         with patch('urllib.request.urlopen', side_effect=error):
             with self.assertRaisesRegex(ScanError,'403'): fetch_feed('Techolay Sosyal')
 
+    def test_html_listing_filters_and_deduplicates(self):
+        from scanner import parse_listing
+        data=b'<a href="/konu/ssd.1/">SSD takacak usta ariyorum</a><a href="/konu/ssd.1/">SSD takacak usta ariyorum</a><a href="/konu/service.2/">Bilgisayar montaj hizmeti verilir</a><a href="https://other.com/konu/x/">SSD takacak usta ariyorum</a><a href="/login">Bilgisayar tamircisi ariyorum</a>'
+        result=parse_listing(data,'https://example.com/forum')
+        self.assertEqual(result['count'],2)
+        self.assertEqual(len(result['candidates']),1)
+        self.assertIn('liste',result['examined'][0]['reason'])
+    def test_html_without_supported_content_is_error(self):
+        from scanner import parse_listing
+        with self.assertRaisesRegex(ScanError,'özel entegrasyon'):
+            parse_listing(b'<a href="/about">About this site</a>','https://example.com/')
+    def test_html_access_error_remains_visible(self):
+        from scanner import fetch_web
+        with patch('urllib.request.urlopen',side_effect=HTTPError('https://example.com',403,'blocked',{},None)):
+            with self.assertRaisesRegex(ScanError,'403'): fetch_web('Test','https://example.com')
+
 if __name__ == '__main__': unittest.main()
