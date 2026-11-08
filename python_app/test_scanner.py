@@ -22,6 +22,14 @@ class ScannerTest(unittest.TestCase):
             self.assertEqual(db.save_scan('Test',results),0)
             self.assertEqual(len(db.leads()),1)
             self.assertEqual(db.leads()[0]['location'],'Konum doğrulanmalı')
+    def test_turkish_candidate_classification(self):
+        from scanner import classify
+        self.assertIn('Olası hizmet talebi', classify('Kadıköy bilgisayar tamiri için usta arıyorum', ''))
+        self.assertIn('İncelenecek aday', classify('Laptop termal macun yenileme', ''))
+        self.assertIsNone(classify('Hangi SSD önerirsiniz?', ''))
+        self.assertIsNone(classify('SSD satıyorum', ''))
+        self.assertIsNone(classify('SSD servisi aramıyorum', ''))
+        self.assertIsNone(classify('Sıvı soğutma önerisi', 'Hangisini alayım?'))
     def test_atom_and_invalid(self):
         self.assertEqual(len(parse_feed(ATOM)[1]),1)
         with self.assertRaises(ScanError): parse_feed(b'<html>blocked</html>')

@@ -26,15 +26,32 @@ def plain_text(value):
     parser = TextExtractor(); parser.feed(value or '')
     return re.sub(r'\s+', ' ', ' '.join(parser.parts)).strip()[:6000]
 
+def normalize(value):
+    # Türkçe büyük/küçük I ve yaygın Türkçe karakter varyantları karşılaştırılır.
+    text = value.translate(str.maketrans({'İ':'i','I':'ı'})).lower()
+    return text.translate(str.maketrans({'ı':'i','ş':'s','ğ':'g','ü':'u','ö':'o','ç':'c'}))
+
 def classify(title, description):
-    text = (title + ' ' + description).lower().replace('ı','i')
-    # Bir bilgi sorusunu iş talebi olarak göstermemek için iki kanıt aranır.
-    if any(x in text for x in ('satiyorum', 'satilik', 'satıyorum', 'alınır satılır', 'öneri', 'oneri', 'hangisini al')):
-        return None
-    service = next((x for x in ('ssd', 'ram', 'termal macun', 'format', 'bilgisayar tamir', 'laptop tamir', 'montaj', 'yükseltme', 'yukseltme') if x in text), None)
-    intent = next((x for x in ('usta', 'servis', 'yapacak', 'takacak', 'yardimci olacak', 'yardımcı olacak', 'yaptirmak', 'yaptırmak', 'arıyorum', 'ariyorum', 'arıyom', 'ihtiyacim var', 'ihtiyacım var', 'nerede yaptir', 'nerede yaptır') if x in text), None)
-    if not service or not intent: return None
-    return f'Hizmet ifadesi: {service}; talep ifadesi: {intent}. Konum doğrulanmalı.'
+    text = normalize(title + ' ' + description)
+    services = ('ssd', 'ram', 'termal macun', 'format', 'bilgisayar', 'laptop',
+                'dizustu', 'masaustu', 'pc', 'anakart', 'ekran karti', 'sivi sogutma')
+    service = next((word for word in services if re.search(r'(?<!\w)' + re.escape(word) + r'(?!\w)', text)), None)
+    if not service: return None
+    exclusions = ('satiyorum', 'satilik', 'alınır satılır', 'cozuldu', 'sorun cozuldu', 'servis aramiyorum', 'usta aramiyorum')
+    if any(normalize(x) in text for x in exclusions): return None
+    strong = ('usta', 'teknisyen', 'servis ariyorum', 'tamirci', 'takacak', 'montaj yapacak',
+              'yapacak birini', 'yaptirmak', 'yapabilecek', 'takabilecek', 'yardimci olacak',
+              'nerede yaptir', 'servise gotur', 'tamir ettir', 'ucret karsiligi')
+    intent = next((word for word in strong if word in text), None)
+    if intent:
+        return f'Olası hizmet talebi · cihaz/iş: {service}; ifade: {intent}. Konum ve ihtiyaç doğrulanmalı.'
+    # Açık arıza veya montaj ifadelerini kullanıcı değerlendirmesi için ayrıca sakla.
+    review = ('tamir', 'onarim', 'montaj', 'kurulum', 'format at', 'ssd tak', 'ram tak',
+              'ssd degis', 'ram degis', 'ekran degis', 'termal macun', 'bakim yap', 'arizali')
+    hint = next((word for word in review if word in text), None)
+    if hint:
+        return f'İncelenecek aday · cihaz/iş: {service}; ifade: {hint}. İş talebi ve konum doğrulanmadı.'
+    return None
 
 def parse_feed(data):
     if len(data) > MAX_BYTES: raise ScanError('Akış boyutu güvenlik sınırını aştı.')

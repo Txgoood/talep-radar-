@@ -80,7 +80,7 @@ class MainWindow(QMainWindow):
         w,v=self.page('Genel Özet ve Durum Radarı','Gerçek kayıtlar · Kaynak erişim durumu tarama sonucuna göre gösterilir')
         top=QHBoxLayout(); self.summary=QLabel(); self.summary.setStyleSheet('background:#142033;padding:20px;font-size:16px;'); top.addWidget(self.summary,1)
         self.scan_button=QPushButton('⟳  Manuel Tara (F5)'); self.scan_button.setObjectName('primary'); self.scan_button.clicked.connect(self.start_scan); top.addWidget(self.scan_button); v.addLayout(top)
-        self.scan_status=QLabel('Tarama henüz yapılmadı.'); self.scan_status.setWordWrap(True); self.scan_status.setStyleSheet('background:#142033;padding:15px;'); v.addWidget(self.scan_status)
+        self.scan_status=QLabel('Tarama henüz yapılmadı. Akışın sunduğu son kayıtlar incelenir.'); self.scan_status.setWordWrap(True); self.scan_status.setStyleSheet('background:#142033;padding:15px;'); v.addWidget(self.scan_status)
         button=QPushButton('Talepleri İncele'); button.clicked.connect(lambda:self.nav.setCurrentRow(1)); v.addWidget(button)
         v.addWidget(QLabel('Telegram: Bağlı değil   |   Yerel model: Kullanılmıyor   |   Gönderim: Desteklenmiyor'))
         v.addStretch(); return w
@@ -91,7 +91,7 @@ class MainWindow(QMainWindow):
             label.setWordWrap(True); label.setStyleSheet('background:#142033;padding:15px;'); v.addWidget(label)
         from PySide6.QtWidgets import QCheckBox
         self.auto_scan=QCheckBox('30 dakikada bir tara (uygulama açıkken)'); self.auto_scan.toggled.connect(self.set_auto_scan); v.addWidget(self.auto_scan)
-        hint=QLabel('Başlık ve özetlerdeki hizmet ve talep ifadeleriyle olası adaylar bulunur; konum ve gerçek ihtiyaç elle doğrulanmalıdır. Erişim hatası, sonuç yok anlamına gelmez.')
+        hint=QLabel('Her kaynak yalnızca akışında verdiği son kayıtları sunar (çoğunlukla 20). Olası talepler ve daha geniş inceleme adayları listelenir; gerçek ihtiyaç ve konumu kontrol edin. Erişim hatası, talep yok demek değildir.')
         hint.setWordWrap(True); v.addWidget(hint); v.addStretch(); return w
     def set_auto_scan(self, checked):
         self.db.set_setting('auto_scan','1' if checked else '0')
@@ -104,7 +104,7 @@ class MainWindow(QMainWindow):
     def scan_result(self, result):
         try:
             added=self.db.save_scan(result['source'],result['candidates'])
-            self.scan_messages.append(f"{result['source']}: {result['count']} kayıt incelendi, {len(result['candidates'])} aday, {added} yeni kayıt.")
+            self.scan_messages.append(f"{result['source']}: {result['count']} kayıt incelendi, {len(result['candidates'])} olası/inceleme adayı, {added} yeni kayıt. Yalnızca RSS akışının sunduğu kayıtlar incelendi.")
         except Exception:
             self.scan_messages.append(f"{result['source']}: sonuçlar kaydedilemedi; tekrar deneyin.")
     def scan_error(self, source, message):
@@ -116,7 +116,7 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, 'Tarama devam ediyor', 'Tarama tamamlandığında pencereyi kapatabilirsiniz.'); event.ignore(); return
         event.accept()
     def make_leads(self):
-        w,v=self.page('Talepler','Kendi bulduğunuz talepleri kaydedin ve durumlarını takip edin.')
+        w,v=self.page('Talepler','Taranan adayları ve manuel eklediğiniz talepleri inceleyin. Konum ve hizmet ihtiyacı doğrulanmalıdır.')
         actions=QHBoxLayout(); add=QPushButton('+ Manuel talep ekle'); add.setObjectName('primary'); add.clicked.connect(self.add_lead); actions.addWidget(add)
         self.search=QLineEdit(); self.search.setPlaceholderText('Talep, kaynak veya konum ara'); self.search.textChanged.connect(self.refresh); actions.addWidget(self.search); v.addLayout(actions)
         splitter=QSplitter(); self.table=QTableWidget(0,5); self.table.setHorizontalHeaderLabels(['ID','BAŞLIK','KAYNAK','KONUM','DURUM']); self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch); self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows); self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers); self.table.itemSelectionChanged.connect(self.show_detail); splitter.addWidget(self.table)
